@@ -28,8 +28,8 @@ git push origin <your_branch_name>
 # actual name of your branch (e.g., "feature/new-feature").
 
 # 4. Create a Pull Request on GitHub
-gh pr create [name]
-gh pr merge [name]
+gh pr create
+gh pr merge
 
 # 5. (After the Pull Request is merged)
 # Update your local 'main' branch with the merged changes:
