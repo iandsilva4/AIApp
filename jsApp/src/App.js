@@ -1,10 +1,11 @@
 import React from "react";
-import JournalForm from "./components/JournalForm";
+import JournalHistory from "./components/JournalHistory";
 
 const App = () => {
   return (
     <div>
-      <JournalForm />
+      <h1>AI Journal App</h1>
+      <JournalHistory />
     </div>
   );
 };
