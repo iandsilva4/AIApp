@@ -14,8 +14,8 @@ const JournalForm = () => {
     setSummary(""); // Reset previous results
 
     try {
-      // Send POST request to backend
-      const response = await axios.post("https://aiapp-tlm7.onrender.com/summarize", {
+      // Send POST request to backend using the environment variable
+      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/summarize`, {
         entry: entry,
         max_tokens: 1024,
         temperature: 1.0,
