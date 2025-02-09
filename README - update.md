@@ -22,6 +22,8 @@ git commit -m "Updated README.md with [your changes]"
 
 # 3. Push the changes to the remote branch
 git push origin <your_branch_name>
+git push origin local:staging
+
 
 # This pushes your local commits to the <your_branch_name> branch on the 
 # remote repository (e.g., GitHub). Replace <your_branch_name> with the 
