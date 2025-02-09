@@ -31,6 +31,7 @@ git push origin local:staging
 
 # 4. Create a Pull Request on GitHub
 gh pr create
+gh pr create --base staging --head local --title "Merge staging into main"
 gh pr merge
 
 # 5. (After the Pull Request is merged)
@@ -40,3 +41,8 @@ git pull origin main
 
 
 
+####################
+
+git checkout local
+git pull origin main
+git push origin local
