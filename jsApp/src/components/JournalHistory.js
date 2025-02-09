@@ -12,7 +12,7 @@ const JournalHistory = () => {
   useEffect(() => {
     const fetchEntries = async () => {
       try {
-        const response = await axios.get("http://127.0.0.1:5000/entries");
+        const response = await axios.get("https://aiapp-tlm7.onrender.com/entries");
         setEntries(response.data); // Save fetched entries to state
       } catch (err) {
         setError("Failed to fetch journal entries. Please try again.");
@@ -31,7 +31,7 @@ const JournalHistory = () => {
     setError(null);
 
     try {
-      const response = await axios.post("http://127.0.0.1:5000/summarize", {
+      const response = await axios.post("https://aiapp-tlm7.onrender.com/summarize", {
         entry: newEntry,
         max_tokens: 1024,
         temperature: 1.0,

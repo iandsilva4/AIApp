@@ -15,7 +15,7 @@ const JournalForm = () => {
 
     try {
       // Send POST request to backend
-      const response = await axios.post("http://127.0.0.1:5000/summarize", {
+      const response = await axios.post("https://aiapp-tlm7.onrender.com/summarize", {
         entry: entry,
         max_tokens: 1024,
         temperature: 1.0,
