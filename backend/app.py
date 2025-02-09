@@ -45,7 +45,7 @@ CORS(app)  # Enable CORS to allow requests from the frontend
 # Understand testing environment and set up variables
 ENV = os.getenv("FLASK_ENV", "production")
 
-if ENV == "production":
+if ENV == "production" or "staging":
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://journalentrydb_user:cdoi8UoSNpqc6YWxCYOfRQUtJ4kr6uVL@dpg-cuif0b23esus739gjcq0-a.virginia-postgres.render.com/journalentrydb'
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("LOCAL_DATABASE_URL")
