@@ -12,7 +12,9 @@ const JournalHistory = () => {
   useEffect(() => {
     const fetchEntries = async () => {
       try {
-        const response = await axios.get("https://aiapp-tlm7.onrender.com/entries");
+        // Fetch journal entries from the backend using the environment variable
+        console.log(`${process.env.REACT_APP_BACKEND_URL}/entries`);
+        const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/entries`);
         setEntries(response.data); // Save fetched entries to state
       } catch (err) {
         setError("Failed to fetch journal entries. Please try again.");
@@ -20,7 +22,6 @@ const JournalHistory = () => {
         setLoading(false); // Stop loading spinner
       }
     };
-
     fetchEntries();
   }, []);
 
@@ -31,7 +32,7 @@ const JournalHistory = () => {
     setError(null);
 
     try {
-      const response = await axios.post("https://aiapp-tlm7.onrender.com/summarize", {
+      const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/summarize`, {
         entry: newEntry,
         max_tokens: 1024,
         temperature: 1.0,
@@ -55,8 +56,6 @@ const JournalHistory = () => {
 
   return (
     <div>
-      <h1>AI Journal App</h1>
-
       {/* Form to Add New Entry */}
       <form onSubmit={handleSubmit}>
         <textarea
