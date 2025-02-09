@@ -46,3 +46,8 @@ git pull origin main
 git checkout local
 git pull origin main
 git push origin local
+
+
+###################
+
+git push origin local:staging
