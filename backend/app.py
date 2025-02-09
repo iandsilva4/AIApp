@@ -1,10 +1,30 @@
+###############################################
+################ CONFIGURATION ################
+###############################################
+
 import os
 import openai
+import firebase_admin
+import json
+import base64
+
 from flask import Flask, request, jsonify
-from flask_cors import CORS
-from openai import OpenAI
-from dotenv import load_dotenv
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from flask_cors import CORS
+
+from openai import OpenAI
+
+from dotenv import load_dotenv
+
+from authlib.integrations.flask_client import OAuth
+from flask_sqlalchemy import SQLAlchemy
+
+from firebase_admin import auth, credentials, initialize_app
+from dotenv import load_dotenv
+
+
 from datetime import datetime
 
 
@@ -12,6 +32,11 @@ from datetime import datetime
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=OPENAI_API_KEY)
+
+###############################################
+################ FLASK APP ################
+###############################################
+
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -25,11 +50,14 @@ if ENV == "production":
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("LOCAL_DATABASE_URL")
 
+###############################################
+################ SQL DATABASE ################
+###############################################
+
 # Configure PostgreSQL database
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 # Define JournalEntry model
 class JournalEntry(db.Model):
@@ -37,10 +65,57 @@ class JournalEntry(db.Model):
     text = db.Column(db.Text, nullable=False)
     summary = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    user_email = db.Column(db.String(255), nullable=False)  # Store user's email
 
 # Create database tables
 with app.app_context():
     db.create_all()
+
+###############################################
+################ FIREBASE AUTH ################
+###############################################
+
+# Initialize Firebase Admin SDK
+firebase_credentials = {
+    "type": os.getenv("FIREBASE_TYPE"),
+    "project_id": os.getenv("FIREBASE_PROJECT_ID"),
+    "private_key_id": os.getenv("FIREBASE_PRIVATE_KEY_ID"),
+    "private_key": os.getenv("FIREBASE_PRIVATE_KEY").replace("\\n", "\n"),  # Handle newline characters in keys
+    "client_email": os.getenv("FIREBASE_CLIENT_EMAIL"),
+    "client_id": os.getenv("FIREBASE_CLIENT_ID"),
+    "auth_uri": os.getenv("FIREBASE_AUTH_URI"),
+    "token_uri": os.getenv("FIREBASE_TOKEN_URI"),
+    "auth_provider_x509_cert_url": os.getenv("FIREBASE_AUTH_PROVIDER_X509_CERT_URL"),
+    "client_x509_cert_url": os.getenv("FIREBASE_CLIENT_X509_CERT_URL"),
+}
+cred = credentials.Certificate(firebase_credentials)
+firebase_admin.initialize_app(cred)
+
+def verify_firebase_token(token):
+    try:
+        decoded_token = auth.verify_id_token(token)
+        return decoded_token
+    except Exception as e:
+        print("Token verification failed:", e)
+        return None
+
+###############################################
+################ BACKEND FUNCTIONS ################
+###############################################
+
+@app.route('/sessions', methods=['GET'])
+def get_sessions():
+    token = request.headers.get('Authorization')
+    user_data = verify_firebase_token(token)
+
+    if not user_data:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user_email = user_data['email']
+    sessions = JournalEntry.query.filter_by(user_email=user_email).all()
+
+    return jsonify([{"id": s.id, "text": s.text, "summary": s.summary} for s in sessions])
+
 
 #Takes in a prompt and summarizes it
 def summarize_entry(entry, max_tokens=1024, temperature=1.0):
@@ -57,19 +132,31 @@ def summarize_entry(entry, max_tokens=1024, temperature=1.0):
 @app.route('/summarize', methods=['POST'])
 def summarize():
     try:
-        # Get JSON data from the request
+        token = request.headers.get('Authorization')
+        if not token:
+            return jsonify({"error": "Unauthorized"}), 401
+
+        # Extract user email from Firebase token
+        decoded_token = verify_firebase_token(token.replace("Bearer ", ""))
+        if not decoded_token:
+            return jsonify({"error": "Invalid authentication token"}), 401
+
+        user_email = decoded_token.get("email")
+        if not user_email:
+            return jsonify({"error": "Email not found in authentication token"}), 401
+
+        # Get the journal entry text from the request
         data = request.json
-        entry = data.get("entry", "")
-        max_tokens = data.get("max_tokens", 1024)
-        temperature = data.get("temperature", 1.0)
+        entry_text = data.get("entry", "")
 
-        # Generate summary using OpenAI
-        summary = summarize_entry(entry, max_tokens, temperature)
+        # Generate AI summary
+        summary = "This is a summary of: " + entry_text
 
-        # Save the journal entry and summary to the database
-        new_entry = JournalEntry(text=entry, summary=summary)
+        # Save entry to database with user email
+        new_entry = JournalEntry(text=entry_text, summary=summary, user_email=user_email)
         db.session.add(new_entry)
         db.session.commit()
+
         return jsonify({"summary": summary}), 200
 
     except Exception as e:
@@ -78,11 +165,44 @@ def summarize():
 # API route to get all past journal entries
 @app.route('/entries', methods=['GET'])
 def get_entries():
-    entries = JournalEntry.query.order_by(JournalEntry.timestamp.desc()).all()
-    return jsonify([
-        {"id": e.id, "text": e.text, "summary": e.summary, "timestamp": e.timestamp.isoformat()}
-        for e in entries
-    ])
+    try:
+        # Get the user's Firebase token
+        token = request.headers.get('Authorization')
+        if not token:
+            return jsonify({"error": "Unauthorized"}), 401
+
+        # Decode the Firebase token to get the user's email
+        decoded_token = verify_firebase_token(token.replace("Bearer ", ""))
+        if not decoded_token:
+            return jsonify({"error": "Invalid authentication token"}), 401
+
+        user_email = decoded_token.get("email")
+        if not user_email:
+            return jsonify({"error": "Email not found in authentication token"}), 401
+
+        # Query the database for entries belonging to this user
+        user_entries = JournalEntry.query.filter_by(user_email=user_email).order_by(JournalEntry.timestamp.desc()).all()
+
+        # Serialize the entries into a list of dictionaries
+        entries = [
+            {
+                "id": entry.id,
+                "text": entry.text,
+                "summary": entry.summary,
+                "timestamp": entry.timestamp.isoformat(),
+                "user_email": entry.user_email,
+            }
+            for entry in user_entries
+        ]
+
+        return jsonify(entries), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+###############################################
+################ RUNNING ################
+###############################################
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))  # Default to 5000 if no port is provided
