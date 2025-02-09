@@ -29,7 +29,7 @@ from datetime import datetime
 
 
 # Load environment variables
-env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../.env')
+#env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
 load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=OPENAI_API_KEY)
@@ -78,7 +78,7 @@ with app.app_context():
 
 # Initialize Firebase Admin SDK
 
-cred = credentials.Certificate("etc/secrets/serviceAccountKey.json")
+cred = credentials.Certificate("serviceAccountKey.json")
 firebase_admin.initialize_app(cred)
 
 def verify_firebase_token(token):
