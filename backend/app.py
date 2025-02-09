@@ -13,12 +13,21 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=OPENAI_API_KEY)
 
+
+# Understand testing environment and set up variables
+ENV = os.getenv("FLASK_ENV", "production")
+
+if ENV == "development":
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://journalentrydb_user:cdoi8UoSNpqc6YWxCYOfRQUtJ4kr6uVL@dpg-cuif0b23esus739gjcq0-a.virginia-postgres.render.com/journalentrydb'
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
+
+
 # Initialize Flask app
 app = Flask(__name__)
 CORS(app)  # Enable CORS to allow requests from the frontend
 
 # Configure PostgreSQL database
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://journalentrydb_user:cdoi8UoSNpqc6YWxCYOfRQUtJ4kr6uVL@dpg-cuif0b23esus739gjcq0-a.virginia-postgres.render.com/journalentrydb'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 
