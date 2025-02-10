@@ -78,9 +78,9 @@ const ChatSidebar = ({ user, activeSession, setActiveSession }) => {
   };
 
   useEffect(() => {
-    fetchSessions();
-  }, []);
-
+    fetchSessions(); // Call the function
+  }, [fetchSessions]); // Add it to the dependency array
+  
   return (
     <div className="chat-sidebar">
       {/* Header with title and optional icons */}
