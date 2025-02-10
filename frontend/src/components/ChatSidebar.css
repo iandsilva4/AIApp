@@ -1,0 +1,182 @@
+/* Sidebar container - No scrolling here */
+.chat-sidebar {
+  background-color: #ffffff;
+  color: #333;
+  border-radius: 8px 0 0 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  box-sizing:border-box; /**/
+  height: 100%;
+  max-width: 100%; /* Prevents overflow on small screens */
+  overflow: hidden; /* Prevents scrolling on the entire sidebar */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Sidebar header */
+.chat-sidebar-header {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 20px;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Section titles */
+.chat-sidebar-section {
+  font-size: 14px;
+  font-weight: bold;
+  padding: 10px;
+  color: #666;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  flex-shrink: 0; /* Prevents shrinking */
+}
+
+/* Buttons */
+.chat-sidebar button,
+.new-session-button {
+  background-color: transparent;
+  text-align:left;
+  opacity:1;
+  color: darkgray;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 20px;
+}
+
+.chat-sidebar button:hover,
+.new-session-button:hover {
+  background-color: transparent;
+  color: gray;
+}
+
+/* Red action buttons */
+.chat-sidebar li button {
+  background-color: transparent;
+  color: gray;
+  border: none;
+  padding: 5px 8px;
+  border-radius: 4px;
+}
+
+.chat-sidebar li button:hover {
+  background-color: transparent;
+}
+
+/* Make "Most Recent" section scrollable */
+.session-list {
+  flex-grow: 1; /* Allow it to expand and take available space */
+  max-height: calc(100vh - 250px); /* Adjust dynamically */
+  padding: 0; /* Remove all internal padding */
+  margin: 0; /* Remove all external margin */
+  overflow-y: auto; /* Enable vertical scrolling */
+  scrollbar-gutter: stable;
+  padding-right: 10px;
+}
+
+/* Scrollbar Styling - Hidden by Default */
+.session-list::-webkit-scrollbar {
+  width: 6px; /* Hidden by default */
+  opacity:0;
+  transition: width 0.3s ease-in-out;
+}
+
+/* Show scrollbar when hovering */
+.session-list:hover::-webkit-scrollbar {
+  width: 8px;
+  opacity:1;
+  transition: width 0.3s ease-in-out;
+}
+
+/* Scrollbar thumb (draggable part) */
+.session-list::-webkit-scrollbar-thumb {
+  background-color: rgba(225, 225, 225, 0.7);
+  border-radius: 4px;
+  transition: background-color 0.3s ease-in-out;
+}
+
+/* Darker thumb on hover */
+.session-list:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(150, 150, 150, 0.9);
+}
+
+/* Scrollbar track */
+.session-list::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+/* Active scrollbar appearance */
+.session-list::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(120, 120, 120, 1);
+}
+
+/* Session item - Smaller width and centered */
+.session-item {
+  margin: 10px auto; /* Center the box horizontally */
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-color: transparent;
+  border-radius: 8px;
+  background-color: transparent;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column; /* Align items horizontally */
+  justify-content: space-between; /* Space out the title and button */
+}
+
+.session-item:hover {
+  background-color: rgb(250, 250, 250);
+}
+
+.session-item.active {
+  background-color: rgb(240, 250, 255);
+}
+
+/* Container for title and button */
+.session-header {
+  display: flex;
+  flex-direction: row; /* Align title and button horizontally */
+  align-items: left; /* Vertically align title and button */
+  justify-content: space-between; /* Space them apart */
+  width: 100%; /* Take full width of the parent */
+}
+
+/* Title styling */
+.session-title {
+  font-size: 14px;
+  font-weight: bold;
+  margin: 0; /* Remove bottom margin for alignment */
+  color: #333;
+  flex: 1; /* Allow the title to take up available space */
+  text-align: left;
+}
+
+/* Message preview styling */
+.session-preview {
+  font-size: 12px;
+  color: #999;
+  margin-top: 5px; /* Add some spacing below the title */
+  text-align: left;
+}
+
+/* Edit button styling */
+.edit-button {
+  align-self: center; /* Ensure it stays vertically centered */
+  padding: 5px 10px;
+  font-size: 12px;
+  color: white;
+  background-color: #007bff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 10px; /* Add space between the title and button */
+}
+
+.session-item .edit-button:hover {
+  color: darkgray;
+}

@@ -18,17 +18,13 @@ const Login = () => {
     localStorage.removeItem("user");
   };
 
-  return (
+  return user ? (
     <div>
-      {user ? (
-        <div>
-          <p>Welcome, {user.displayName}</p>
-          <button onClick={handleLogout}>Logout</button>
-        </div>
-      ) : (
-        <button onClick={handleLogin}>Sign in with Google</button>
-      )}
+      <p>Welcome, {user.displayName}</p>
+      <button onClick={handleLogout}>Logout</button>
     </div>
+  ) : (
+    <button onClick={handleLogin}>Sign in with Google</button>
   );
 };
 

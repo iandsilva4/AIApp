@@ -1,0 +1,78 @@
+
+
+/* Chat Window styling */
+.chat-window {
+    flex: 1; /* Occupy remaining space */
+    background-color: #ffffff; /* White background */
+    border-radius: 0 10px 10px 0; /* Rounded only on the right */
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* Match the height of the sidebar */
+}
+  
+/* Messages */
+.chat-window .messages {
+    flex: 1;
+    overflow-y: auto; /* Scrollable if messages exceed height */
+    padding: 20px; /* Padding for the container */
+    gap: 20px; /* Add spacing between messages */
+    flex-direction: column; /* Stack messages vertically*/
+    display: flex;
+}
+
+/* General styles for all messages */
+.chat-window .message {
+    display: inline-block; /* Dynamically size the bubble based on content */
+    max-width: 75%; /* Limit the bubble width to 75% of the container */
+    word-wrap: break-word; /* Wrap long words to avoid overflow */
+    padding: 12px 18px; /* Add padding inside the bubble */
+    border-radius: 10px 10px 0px 10px; /* Smooth edges for input */
+    margin: 0; /* Reset margins for consistent spacing */
+}
+
+/* User message bubbles (right-aligned) */
+.message.user {
+    align-self: flex-end; /* Align to the right */
+    background-color: #dff9fb; /* Light blue */
+    color: #333; /* Dark text */
+    text-align: left; /* Ensure text inside is left-aligned */
+    margin-left: auto; /* Push to the right */
+}
+
+/* Assistant message bubbles (left-aligned) */
+.message.assistant {
+    align-self: flex-start; /* Align to the left */
+    /*background-color: #f8f9fa; /* Light gray */
+    color: #555; /* Dark gray text */
+    text-align: left; /* Ensure text inside is left-aligned */
+    margin-right: auto; /* Push to the left */
+}
+
+/* Input area */
+.chat-window .chat-input {
+    display: flex;
+    padding: 10px 15px;
+    background-color: #f4f4f4; /* Subtle contrast */
+    border-top: 1px solid #ddd;
+}
+
+.chat-window .chat-input input {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 10px 10px 10px 10px; /* Smooth edges for input */
+    margin-right: 10px;
+}
+
+.chat-window .chat-input button {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 10px 10px 10px 10px; /* Smooth edges for input */
+    cursor: pointer;
+}
+
+.chat-window .chat-input button:hover {
+    background-color: #0056b3; /* Darker blue */
+}
