@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import "./ChatSidebar.css";
+
 
 
 const ChatSidebar = ({ user, activeSession, setActiveSession }) => {
@@ -12,7 +13,7 @@ const ChatSidebar = ({ user, activeSession, setActiveSession }) => {
   const [editedTitle, setEditedTitle] = useState("");
 
   // Fetch existing sessions
-  const fetchSessions = async () => {
+  const fetchSessions = useCallback(async () => {
     try {
       const token = await user.getIdToken();
       const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/sessions`, {
@@ -23,7 +24,7 @@ const ChatSidebar = ({ user, activeSession, setActiveSession }) => {
       setError("Failed to load sessions.");
       console.error("Error fetching sessions:", err.response ? err.response.data : err.message);
     }
-  };
+  }, [user]); // Add user as a dependency
 
   // Create a new session
   const handleCreateSession = async () => {

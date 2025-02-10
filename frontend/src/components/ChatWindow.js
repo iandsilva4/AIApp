@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import "./ChatWindow.css";
 
@@ -8,26 +8,26 @@ const ChatWindow = ({ user, activeSession }) => {
   const [input, setInput] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Fetch previous messages when a session is selected
-  useEffect(() => {
+  // Memoize the fetchMessages function
+  const fetchMessages = useCallback(async () => {
     if (!activeSession) return;
 
-    const fetchMessages = async () => {
-      try {
-        const token = await user.getIdToken();
-        const response = await axios.get(
-          `${process.env.REACT_APP_BACKEND_URL}/sessions/${activeSession}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setMessages(response.data.messages || []);
-      } catch (error) {
-        setErrorMessage("Failed to load messages.");
-        console.error(error);
-      }
-    };
+    try {
+      const token = await user.getIdToken();
+      const response = await axios.get(
+        `${process.env.REACT_APP_BACKEND_URL}/sessions/${activeSession}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setMessages(response.data.messages || []);
+    } catch (error) {
+      setErrorMessage("Failed to load messages.");
+      console.error(error);
+    }
+  }, [user, activeSession]); // Add user and activeSession to the dependency array
 
+  useEffect(() => {
     fetchMessages();
-  }, [activeSession]);
+  }, [fetchMessages]); // Add fetchMessages to the dependency array
 
   const sendMessage = async () => {
     if (!input.trim()) {
