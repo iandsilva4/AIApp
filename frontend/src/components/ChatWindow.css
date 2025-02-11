@@ -9,16 +9,54 @@
     flex-direction: column;
     height: 100%; /* Match the height of the sidebar */
 }
-  
+
 /* Messages */
 .chat-window .messages {
     flex: 1;
     overflow-y: auto; /* Scrollable if messages exceed height */
+    scrollbar-gutter: stable;
     padding: 20px; /* Padding for the container */
+    padding-right: 28px;
+    margin: 5px;
     gap: 20px; /* Add spacing between messages */
     flex-direction: column; /* Stack messages vertically*/
     display: flex;
 }
+
+/* Scrollbar Styling - Hidden by Default */
+.messages::-webkit-scrollbar {
+    width: 8px; /* Hidden by default */
+    opacity:0;
+    transition: width 0.3s ease-in-out;
+  }
+  
+  /* Show scrollbar when hovering */
+  .messages:hover::-webkit-scrollbar {
+    opacity:1;
+    transition: width 0.3s ease-in-out;
+  }
+  
+  /* Scrollbar thumb (draggable part) */
+  .messages::-webkit-scrollbar-thumb {
+    background-color: rgba(225, 225, 225, 0.7);
+    border-radius: 4px;
+    transition: background-color 0.3s ease-in-out;
+  }
+  
+  /* Darker thumb on hover */
+  .messages:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(150, 150, 150, 0.9);
+  }
+  
+  /* Scrollbar track */
+  .messages::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+  
+  /* Active scrollbar appearance */
+  .messages::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(120, 120, 120, 1);
+  }
 
 /* General styles for all messages */
 .chat-window .message {

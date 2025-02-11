@@ -10,7 +10,6 @@ const ChatSidebar = ({ user, activeSession, setActiveSession }) => {
   const [isNamingSession, setIsNamingSession] = useState(false);
   const [error, setError] = useState("");
   const [editingSessionId, setEditingSessionId] = useState(null);
-  const [editedTitle, setEditedTitle] = useState("");
 
   // Fetch existing sessions
   const fetchSessions = useCallback(async () => {
@@ -48,33 +47,6 @@ const ChatSidebar = ({ user, activeSession, setActiveSession }) => {
     } catch (err) {
       setError("Failed to create a new session.");
       console.error("Error creating session:", err.response ? err.response.data : err.message);
-    }
-  };
-
-  // Edit session title
-  const handleEditSessionTitle = async (sessionId) => {
-    if (!editedTitle.trim()) {
-      setError("Title cannot be empty.");
-      return;
-    }
-
-    try {
-      const token = await user.getIdToken();
-      await axios.put(
-        `${process.env.REACT_APP_BACKEND_URL}/sessions/${sessionId}`,
-        { title: editedTitle },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      setSessions((prevSessions) =>
-        prevSessions.map((session) =>
-          session.id === sessionId ? { ...session, title: editedTitle } : session
-        )
-      );
-      setEditingSessionId(null);
-    } catch (err) {
-      setError("Failed to update session title.");
-      console.error(err);
     }
   };
 
@@ -120,12 +92,6 @@ const ChatSidebar = ({ user, activeSession, setActiveSession }) => {
           >
             {editingSessionId === session.id ? (
               <>
-                <input
-                  type="text"
-                  value={editedTitle}
-                  onChange={(e) => setEditedTitle(e.target.value)}
-                />
-                <button onClick={() => handleEditSessionTitle(session.id)}>Save</button>
                 <button onClick={() => setEditingSessionId(null)}>Cancel</button>
               </>
             ) : (
