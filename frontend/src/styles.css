@@ -22,15 +22,18 @@ body, html {
 /* Header with floating style */
 .header {
   display: flex;
+  flex-direction: row;
   justify-content: space-between;
   align-items: center;
   padding: 15px 25px;
   background-color: #ffffff; /* White background */
   border-radius: 10px; /* Rounded corners */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); /* Subtle shadow */
   margin: 10px; /* Space around header */
+  margin-bottom: 5px;
   z-index: 10; /* Keep it above other elements */
   flex-shrink: 0; /* Prevent header from shrinking */
+  box-sizing: border-box; /* Include padding/borders in size */
 }
 
 .header p {
@@ -49,10 +52,6 @@ body, html {
   font-size: 14px;
 }
 
-.header button:hover {
-  background-color: #0056b3; /* Darker blue on hover */
-}
-
 /* Content container (Sidebar + Chat Window) */
 .app-content {
   display: flex;
@@ -69,7 +68,7 @@ body, html {
   width: clamp(250px, 25%, 400px); /* Increase size dynamically */
   background-color: #ffffff;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); /* Subtle shadow */
   height: 100%; /* Match parent container height */
   overflow-x: hidden; /* Prevent horizontal scrolling */
   overflow-y: hidden; /* Enable scrolling */
@@ -83,7 +82,7 @@ body, html {
   overflow-y: auto; /* Allow vertical scrolling */
   background-color: #ffffff;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); /* Subtle shadow */
   box-sizing: border-box;
 }
 

@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import ChatSidebar from "./components/ChatSidebar";
 import ChatWindow from "./components/ChatWindow";
 import Login from "./components/Login";
+import Logout from "./components/Logout";
 import { auth } from "./Firebase";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import "./styles.css";
 
 
@@ -21,23 +22,15 @@ const App = () => {
     return () => unsubscribe();
   }, []);
 
-  const handleLogout = async () => {
-    await signOut(auth);
-    setUser(null);
-    setActiveSession(null);
-  };
-
   if (!user) {
-    return <Login />;
+    return <Login setUser = {setUser}/>;
   }
 
   return (
     <div className="app-container">
       <header className="header">
-        <p>
-          Welcome, {user.displayName} ({user.email})
-        </p>
-        <button onClick={handleLogout}>Logout</button>
+        <p>Welcome, {user.displayName} ({user.email})</p>
+        <Logout user={user} setUser={setUser} />
       </header>
 
       {/* FLEX CONTAINER FOR SIDEBAR AND CHAT WINDOW */}
