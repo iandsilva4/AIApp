@@ -60,29 +60,33 @@ const ChatSidebar = ({ user, activeSession, setActiveSession }) => {
       <div className="chat-sidebar-header">
         <span>Chats</span>
       </div>
-  
+      <button className="new-session-button" onClick={() => setIsNamingSession(true)}>
+          + New Session
+        </button>
       {/* Input for creating a new session */}
       {isNamingSession ? (
         <div className="new-session-input">
-          <input
-            type="text"
-            placeholder="Enter session title"
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-          />
-          <button onClick={handleCreateSession}>Create</button>
-          <button onClick={() => setIsNamingSession(false)}>Cancel</button>
+          <div className="new-session-title-input">
+            <input
+              type="text"
+              placeholder="Enter session title"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+            />
+          </div>
+          <div className="new-session-sub-buttons">
+            <button className="create-button" onClick={handleCreateSession}>Create</button>
+            <button className="cancel-button" onClick={() => setIsNamingSession(false)}>Cancel</button>
+          </div>
         </div>
       ) : (
-        <button className="new-session-button" onClick={() => setIsNamingSession(true)}>
-          + New Session
-        </button>
+        <></>
       )}
   
       {error && <p className="error">{error}</p>}
 
       {/* Most Recent Section */}
-      <div className="chat-sidebar-section">MOST RECENT ({sessions.length})</div>
+      <div className="chat-sidebar-section">YOUR SESSIONS ({sessions.length})</div>
       <ul className="session-list">
         {sessions.map((session) => (
           <li

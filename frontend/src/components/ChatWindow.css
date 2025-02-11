@@ -114,3 +114,37 @@
 .chat-window .chat-input button:hover {
     background-color: #0056b3; /* Darker blue */
 }
+
+/* Error banner at the top of the chat window */
+.error-banner {
+  background-color: #ffcccc; /* Light red background */
+  color: #990000; /* Dark red text */
+  padding: 10px;
+  font-size: 14px;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 6px;
+  position: relative;
+  top: 10px;
+  width: 90%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  left: 50%; /* Move it to the center */
+  transform: translateX(-50%); /* Adjust so it's fully centered */
+}
+
+/* Close button for the error banner */
+.close-error {
+  background: none;
+  border: none;
+  color: #990000;
+  font-size: 16px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+.close-error:hover {
+  color: #660000;
+}
