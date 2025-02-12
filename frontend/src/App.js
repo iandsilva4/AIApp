@@ -6,7 +6,6 @@ import Logout from "./components/Logout";
 import { auth } from "./Firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import "./App.css";
-import axios from "axios";
 
 
 const App = () => {
@@ -16,7 +15,6 @@ const App = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Sidebar starts open
   const [isAuthReady, setIsAuthReady] = useState(false); // Add this state
   const [sessions, setSessions] = useState([]);
-  const [isSessionsLoading, setIsSessionsLoading] = useState(true);
 
 
   // Listen for authentication state changes
@@ -81,7 +79,6 @@ const App = () => {
             setIsSidebarOpen={setIsSidebarOpen}
             sessions={sessions}
             setSessions={setSessions}
-            isSessionsLoading={isSessionsLoading}
           />
         </div>
       </div>
