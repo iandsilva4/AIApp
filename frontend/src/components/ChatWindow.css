@@ -1,41 +1,51 @@
-
-
 /* Chat Window styling */
 .chat-window {
-  flex: 1; /* Occupy remaining space */
-  background-color: #ffffff; /* White background */
-  border-radius: 0 10px 10px 0; /* Rounded only on the right */
+  flex: 1;
+  background-color: #ffffff;
+  border-radius: 0 10px 10px 0;
   display: flex;
   flex-direction: column;
-  height: 100%; /* Match the height of the sidebar */
+  height: 100%;
 }
 
 /* Chat Header */
 .chat-window .chat-header {
   display: flex;
-  flex-direction: row;
-  flex-shrink: 0;  /* Prevents flexbox from shrinking it */
+  flex-shrink: 0;
   align-items: center;
-  /*justify-content: space-between;/**/
-  padding: 20px;
-  border-bottom: 1px solid #ddd;
-  height: 60px; /* Match the chat window header */
+  padding: 16px 20px;
+  border-bottom: 1px solid #eee;
+  height: 60px;
   box-sizing: border-box;
-  background-color: #fff; /* Ensure consistency */
-  gap: 10px;
+  background-color: #fff;
+  gap: 16px;
 }
 
 .header-title {
   font-size: 18px;
   font-weight: bold;
+  color: #333;
 }
 
-.header-button-section {
+/* Icon button styling */
+.icon-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #666;
+  cursor: pointer;
   display: flex;
-  flex-direction: row;
-  gap: 5px;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
 }
 
+.icon-button:hover {
+  background-color: #f5f5f5;
+  color: #333;
+}
 
 .sidebar-button {
 
@@ -44,86 +54,127 @@
 /* Messages */
 .chat-window .messages {
   flex: 1;
-  overflow-y: auto; /* Scrollable if messages exceed height */
+  overflow-y: auto;
   scrollbar-gutter: stable;
-  padding: 20px; /* Padding for the container */
+  padding: 20px;
   padding-left: 15px;
-  padding-right: 28px;
+  padding-right: 7px; /*remove 8px for the scrollbar*/
   margin: 5px;
-  gap: 20px; /* Add spacing between messages */
-  flex-direction: column; /* Stack messages vertically*/
+  gap: 20px;
+  flex-direction: column;
   display: flex;
+  align-items: stretch;
 }
 
-/* Scrollbar Styling - Hidden by Default */
+/* Scrollbar Styling */
 .messages::-webkit-scrollbar {
-  width: 8px; /* Hidden by default */
-  opacity:0;
+  width: 8px;
+  opacity: 0;
   transition: width 0.3s ease-in-out;
 }
 
-/* Show scrollbar when hovering */
 .messages:hover::-webkit-scrollbar {
-  opacity:1;
-  transition: width 0.3s ease-in-out;
+  opacity: 1;
 }
 
-/* Scrollbar thumb (draggable part) */
 .messages::-webkit-scrollbar-thumb {
   background-color: rgba(225, 225, 225, 0.7);
   border-radius: 4px;
   transition: background-color 0.3s ease-in-out;
 }
 
-/* Darker thumb on hover */
 .messages:hover::-webkit-scrollbar-thumb {
   background-color: rgba(150, 150, 150, 0.9);
 }
 
-/* Scrollbar track */
 .messages::-webkit-scrollbar-track {
   background-color: transparent;
 }
 
-/* Active scrollbar appearance */
 .messages::-webkit-scrollbar-thumb:hover {
   background-color: rgba(120, 120, 120, 1);
 }
 
-/* General styles for all messages */
+/* Message container styles */
+.message-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: fit-content;
+  padding: 0;
+  margin: 0;
+}
+
+.message-container.user {
+  flex-direction: row-reverse;
+}
+
+/* Message bubble styles */
 .chat-window .message {
-  display: inline-block; /* Dynamically size the bubble based on content */
-  max-width: 75%; /* Limit the bubble width to 75% of the container */
-  word-wrap: break-word; /* Wrap long words to avoid overflow */
-  border-radius: 10px 10px 0px 10px; /* Smooth edges for input */
-  margin: 0; /* Reset margins for consistent spacing */
-  padding-left:10px;
+  display: inline-block;
+  max-width: 75%;
+  word-wrap: break-word;
+  border-radius: 10px;
+  margin: 0;
+  padding: 12px 12px;
+  min-height: 20px;
+  line-height: 20px;
+  vertical-align: middle;
+  box-sizing: border-box;
 }
 
-/* User message bubbles (right-aligned) */
 .message.user {
-  align-self: flex-end; /* Align to the right */
-  background-color: #dff9fb; /* Light blue */
-  color: #333; /* Dark text */
-  text-align: left; /* Ensure text inside is left-aligned */
-  margin-left: auto; /* Push to the right */
-  padding: 12px 18px; /* Add padding inside the bubble */
+  align-self: flex-end;
+  background-color: #dff9fb;
+  color: #333;
+  text-align: left;
+  margin-left: 0;
+  margin-right: 0;
+  padding: 12px 18px;
 }
 
-/* Assistant message bubbles (left-aligned) */
 .message.assistant {
-  align-self: flex-start; /* Align to the left */
-  /*background-color: #f8f9fa; /* Light gray */
-  color: #555; /* Dark gray text */
-  text-align: left; /* Ensure text inside is left-aligned */
-  margin-right: auto; /* Push to the left */
+  align-self: flex-start;
+  color: #555;
+  text-align: left;
+  margin-right: auto;
+}
+
+/* Profile icon styling */
+.profile-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 7px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.profile-icon img {
+  width: 20px;
+  height: 20px;
+}
+
+.profile-icon.assistant {
+  background-color: #007bff;
+}
+
+.profile-icon.user {
+  background-color: #6c5ce7;
 }
 
 /* Input area */
 .chat-window .chat-input {
   display: flex;
-  padding: 10px 15px;
-  background-color: #f4f4f4; /* Subtle contrast */
+  padding: 10px 20px;
+  background-color: #f4f4f4;
   border-top: 1px solid #ddd;
 }
 
@@ -131,7 +182,7 @@
   flex: 1;
   padding: 12px;
   border: 1px solid #ddd;
-  border-radius: 10px 10px 10px 10px; /* Smooth edges for input */
+  border-radius: 10px;
   margin-right: 10px;
 }
 
@@ -140,44 +191,47 @@
   background-color: #007bff;
   color: white;
   border: none;
-  border-radius: 10px 10px 10px 10px; /* Smooth edges for input */
+  border-radius: 10px;
   cursor: pointer;
 }
 
 .chat-window .chat-input button:hover {
-  background-color: #0056b3; /* Darker blue */
+  background-color: #0056b3;
 }
 
-/* Error banner at the top of the chat window */
-.error-banner {
-background-color: #ffcccc; /* Light red background */
-color: #990000; /* Dark red text */
-padding: 10px;
-font-size: 14px;
-font-weight: bold;
-display: flex;
-justify-content: space-between;
-align-items: center;
-border-radius: 6px;
-position: relative;
-top: 10px;
-width: 90%;
-box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-z-index: 100;
-left: 50%; /* Move it to the center */
-transform: translateX(-50%); /* Adjust so it's fully centered */
+/* Error message styling */
+.error-message {
+  background-color: #fee2e2;
+  color: #dc2626;
+  padding: 8px 16px;
+  margin: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  animation: fadeIn 0.3s ease-in-out;
 }
 
-/* Close button for the error banner */
-.close-error {
-background: none;
-border: none;
-color: #990000;
-font-size: 16px;
-cursor: pointer;
-margin-left: 10px;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.close-error:hover {
-color: #660000;
+.fade-out {
+  animation: fadeOut 0.3s ease-in-out 2.7s forwards;
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
 }

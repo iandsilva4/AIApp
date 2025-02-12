@@ -37,26 +37,24 @@ const App = () => {
 
       {/* Apply 'sidebar-hidden' class when sidebar is closed */}
       <div className={"app-content"}>
-        {/* Remove sidebar-container when the sidebar is closed */}
         {isSidebarOpen ? (
           <div className="sidebar-container">
             <ChatSidebar
               user={user}
               activeSession={activeSession}
               setActiveSession={setActiveSession}
-              isSidebarOpen={isSidebarOpen} // Pass state
-              setIsSidebarOpen={setIsSidebarOpen} // Pass function
+              isSidebarOpen={isSidebarOpen}
+              setIsSidebarOpen={setIsSidebarOpen}
             />
           </div>
         ) : null}
 
-        {/* Chat Window */}
         <div className="chat-window-container">
           <ChatWindow 
             user={user} 
             activeSession={activeSession} 
-            isSidebarOpen={isSidebarOpen} // Pass state
-            setIsSidebarOpen={setIsSidebarOpen} // Pass function
+            isSidebarOpen={isSidebarOpen}
+            setIsSidebarOpen={setIsSidebarOpen}
           />
         </div>
       </div>

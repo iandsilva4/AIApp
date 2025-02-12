@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 import "./ChatWindow.css";
+import assistantIcon from '../assets/assistant-icon.svg'; // You'll need to add this icon
+import defaultUserIcon from '../assets/default-user-icon.svg';
+import { ReactComponent as SidebarToggleIcon } from '../assets/sidebar-toggle-icon.svg';
+import '../styles/shared.css';
 
 
 const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen  }) => {
@@ -75,18 +79,46 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen  }) =
       console.error(err);
     }
   };
-  
+
+  // Add function to get user initials with error handling
+  const getUserInitials = () => {
+    try {
+      if (!user?.displayName?.trim()) return null;
+      
+      const names = user.displayName.trim().split(' ');
+      if (names.length > 0 && names[0]) {
+        return names
+          .map(name => name[0])
+          .join('')
+          .toUpperCase()
+          .slice(0, 2);
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  // Add useEffect for error handling
+  useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => {
+        setErrorMessage("");
+      }, 3000); // Error disappears after 3 seconds
+
+      // Cleanup timeout on component unmount or when error changes
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
 
   return (
     <div className="chat-window">
       <div className="chat-header">
-        <div className="sidebar-button">
-          {!isSidebarOpen && (
-            <button className="toggle-sidebar" onClick={() => setIsSidebarOpen(true)}>
-              Open Sidebar
-            </button>
-          )}
-        </div>
+        {!isSidebarOpen && (
+          <button className="icon-button" onClick={() => setIsSidebarOpen(true)}>
+            <SidebarToggleIcon />
+          </button>
+        )}
         <div className="header-title">
           <span>Chat with Ian</span>
         </div>
@@ -94,18 +126,32 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen  }) =
 
 
         {errorMessage && (
-          <div className="error-banner">
-            <span>{errorMessage}</span>
-            <button className="close-error" onClick={() => setErrorMessage("")}>&times;</button>
+          <div className="error-message fade-out">
+            {errorMessage}
           </div>
         )}
         
         <div className="messages" ref={messagesEndRef}>
           {messages.map((msg, index) => (
-            <div key={index} className={`message ${msg.role}`}>
-              {msg.content}
-            </div>
-            
+            msg.role === 'assistant' ? (
+              <div key={index} className="message-container assistant">
+                <div className="profile-icon assistant">
+                  <img src={assistantIcon} alt="Assistant" />
+                </div>
+                <div className={`message ${msg.role}`}>
+                  {msg.content}
+                </div>
+              </div>
+            ) : (
+              <div key={index} className="message-container user">
+                <div className="profile-icon user">
+                  {getUserInitials() || <img src={defaultUserIcon} alt="User" />}
+                </div>
+                <div className={`message ${msg.role}`}>
+                  {msg.content}
+                </div>
+              </div>
+            )
           ))}
         </div>
         

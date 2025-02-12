@@ -2,6 +2,7 @@ import React from "react";
 import { auth } from "../Firebase";
 import { signOut } from "firebase/auth";
 import "./Logout.css"; // New separate CSS file for logout styling
+import { ReactComponent as LogoutIcon } from '../assets/logout-icon.svg';
 
 const Logout = ({ user, setUser }) => {
   const handleLogout = async () => {
@@ -16,8 +17,8 @@ const Logout = ({ user, setUser }) => {
 
   return (
     <div className="logout-container">
-      <button className="logout-button" onClick={handleLogout}>
-        Logout
+      <button className="icon-button" onClick={handleLogout} title="Logout">
+        <LogoutIcon />
       </button>
     </div>
   );
