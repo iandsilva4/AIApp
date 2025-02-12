@@ -70,7 +70,7 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
       setError("Failed to load sessions.");
       console.error("Error fetching sessions:", err);
     }
-  }, [user]);
+  }, [user, setSessions]);
 
   // Add this effect to refresh sessions when activeSession changes
   useEffect(() => {
