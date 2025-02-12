@@ -14,6 +14,7 @@ const App = () => {
   const [activeSession, setActiveSession] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Sidebar starts open
   const [isAuthReady, setIsAuthReady] = useState(false); // Add this state
+  const [sessions, setSessions] = useState([]);
 
 
   // Listen for authentication state changes
@@ -43,6 +44,15 @@ const App = () => {
     return <Login setUser={setUser} />;
   }
 
+  // Add this function to handle session updates
+  const handleSessionUpdate = (updatedSession) => {
+    setSessions(prevSessions => 
+      prevSessions.map(session => 
+        session.id === updatedSession.id ? updatedSession : session
+      )
+    );
+  };
+
   return (
     <div className="app-container">
       <header className="header">
@@ -59,6 +69,8 @@ const App = () => {
               activeSession={activeSession}
               setActiveSession={setActiveSession}
               setIsSidebarOpen={setIsSidebarOpen}
+              sessions={sessions}
+              setSessions={setSessions}
             />
           </div>
         ) : null}
@@ -69,6 +81,8 @@ const App = () => {
             activeSession={activeSession} 
             isSidebarOpen={isSidebarOpen}
             setIsSidebarOpen={setIsSidebarOpen}
+            sessions={sessions}
+            setSessions={setSessions}
           />
         </div>
       </div>

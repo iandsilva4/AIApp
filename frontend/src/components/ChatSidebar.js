@@ -50,8 +50,7 @@ const getTimeDisplay = (timestamp) => {
   return { relative: relativeTime, full: fullTimestamp };
 };
 
-const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen }) => {
-  const [sessions, setSessions] = useState([]);
+const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, sessions, setSessions }) => {
   const [newTitle, setNewTitle] = useState("");
   const [isNamingSession, setIsNamingSession] = useState(false);
   const [error, setError] = useState("");
@@ -79,12 +78,12 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen }
     }
   }, [user]);
 
-  // Simpler useEffect
+  // Add this effect to refresh sessions when activeSession changes
   useEffect(() => {
     if (user) {
       fetchSessions();
     }
-  }, [fetchSessions, user]);
+  }, [fetchSessions, user, activeSession]); // Add activeSession as dependency
 
   // Create a new session
   const handleCreateSession = async () => {
@@ -213,9 +212,39 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen }
             <button className="icon-button" onClick={() => setIsSidebarOpen(false)}>
               <SidebarToggleIcon />
             </button>
-            <button className="icon-button" onClick={() => {
-              setSessions([{ id: 'new', title: '', isNew: true }, ...sessions]);
-              setEditingSessionId('new');
+            <button className="icon-button" onClick={async () => {
+              try {
+                // End current session if one exists
+                if (activeSession) {
+                  const token = await user.getIdToken();
+                  await axios.put(
+                    `${process.env.REACT_APP_BACKEND_URL}/sessions/${activeSession}/end`,
+                    {},
+                    { headers: { Authorization: `Bearer ${token}` } }
+                  );
+                  
+                  // Update the ended session in the list
+                  setSessions(prevSessions => 
+                    prevSessions.map(session => 
+                      session.id === activeSession ? { ...session, is_ended: true } : session
+                    )
+                  );
+                }
+
+                // Create new session
+                const token = await user.getIdToken();
+                const response = await axios.post(
+                  `${process.env.REACT_APP_BACKEND_URL}/sessions`,
+                  { title: "Untitled Chat" },
+                  { headers: { Authorization: `Bearer ${token}` } }
+                );
+
+                setSessions([response.data, ...sessions]);
+                setActiveSession(response.data.id);
+              } catch (err) {
+                setError("Failed to create a new session.");
+                console.error("Error creating session:", err);
+              }
             }}>
               <NewChatIcon />
             </button>
@@ -326,7 +355,10 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen }
                           </div>
                         ) : (
                           <>
-                            <div className="session-title">{session.title}</div>
+                            <div className={`session-title ${session.is_ended ? 'ended' : ''}`}>
+                              {session.title}
+                              {session.is_ended && <span className="ended-badge">Ended</span>}
+                            </div>
                             <div className="session-actions">
                               <button 
                                 className="edit-button"
@@ -453,7 +485,10 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen }
                               </div>
                             ) : (
                               <>
-                                <div className="session-title">{session.title}</div>
+                                <div className={`session-title ${session.is_ended ? 'ended' : ''}`}>
+                                  {session.title}
+                                  {session.is_ended && <span className="ended-badge">Ended</span>}
+                                </div>
                                 <div className="session-actions">
                                   <button 
                                     className="edit-button"

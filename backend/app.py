@@ -50,6 +50,7 @@ class ChatSession(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     is_deleted = db.Column(db.Boolean, nullable=False, default=False)
     is_archived = db.Column(db.Boolean, nullable=False, default=False)
+    is_ended = db.Column(db.Boolean, nullable=False, default=False)
 
     def to_dict(self):
         return {
@@ -60,7 +61,8 @@ class ChatSession(db.Model):
             "summary": self.summary,
             "timestamp": self.timestamp.isoformat(),
             "is_deleted": self.is_deleted,
-            "is_archived": self.is_archived
+            "is_archived": self.is_archived,
+            "is_ended": self.is_ended
         }
 
 # Firebase token verification
@@ -224,6 +226,18 @@ def create_session():
         return jsonify({"error": "Session title cannot be empty"}), 400
 
     try:
+        # End the previous active session if it exists
+        active_sessions = ChatSession.query.filter_by(
+            user_email=user_email,
+            is_deleted=False,
+            is_archived=False,
+            is_ended=False
+        ).all()
+        
+        for session in active_sessions:
+            session.is_ended = True
+        
+        # Create new session
         session = ChatSession(user_email=user_email, title=title, messages=json.dumps([]), summary="")
         db.session.add(session)
         db.session.commit()
@@ -321,6 +335,9 @@ def chat_with_ai():
     session = ChatSession.query.filter_by(id=session_id, user_email=user_email).first()
     if not session:
         return jsonify({"error": "Session not found"}), 404
+    
+    if session.is_ended:
+        return jsonify({"error": "This session has ended. Please create a new session to continue chatting."}), 403
 
     try:
         # Load existing messages from this session
@@ -395,14 +412,15 @@ def delete_session(user_email, session_id):
 @authenticate
 def toggle_archive_session(user_email, session_id):
     try:
-        # Get the session from the database
         session = ChatSession.query.filter_by(id=session_id, user_email=user_email).first()
         
         if not session:
             return jsonify({'error': 'Session not found'}), 404
 
-        # Toggle archive status
         session.is_archived = not session.is_archived
+        if session.is_archived:
+            session.is_ended = True
+        
         db.session.commit()
         
         return jsonify(session.to_dict())
@@ -410,6 +428,25 @@ def toggle_archive_session(user_email, session_id):
     except Exception as e:
         print(f"Error archiving session: {str(e)}")
         return jsonify({'error': 'Failed to archive session'}), 500
+
+# Add new end session endpoint
+@app.route('/sessions/<int:session_id>/end', methods=['PUT'])
+@authenticate
+def end_session(user_email, session_id):
+    try:
+        session = ChatSession.query.filter_by(id=session_id, user_email=user_email).first()
+        
+        if not session:
+            return jsonify({'error': 'Session not found'}), 404
+
+        session.is_ended = True
+        db.session.commit()
+        
+        return jsonify(session.to_dict())
+
+    except Exception as e:
+        print(f"Error ending session: {str(e)}")
+        return jsonify({'error': 'Failed to end session'}), 500
 
 # Run Flask app
 if __name__ == "__main__":

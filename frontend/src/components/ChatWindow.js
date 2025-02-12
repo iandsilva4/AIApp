@@ -5,10 +5,11 @@ import assistantIcon from '../assets/assistant-icon.svg'; // You'll need to add 
 import defaultUserIcon from '../assets/default-user-icon.svg';
 import { ReactComponent as SidebarToggleIcon } from '../assets/sidebar-toggle-icon.svg';
 import { ReactComponent as SendIcon } from '../assets/send-icon.svg';
+import { ReactComponent as EndIcon } from '../assets/end-icon.svg';
 import '../styles/shared.css';
 
 
-const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen  }) => {
+const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sessions, setSessions }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -18,6 +19,7 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen  }) =
   const textareaRef = useRef(null); // Add ref for textarea
   const [isLoading, setIsLoading] = useState(false);
   const [isAIResponding, setIsAIResponding] = useState(false);
+  const [isSessionEnded, setIsSessionEnded] = useState(false);
 
   // Reset textarea height
   const resetTextareaHeight = () => {
@@ -67,6 +69,8 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen  }) =
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setMessages(response.data.messages || []);
+      // Store session state
+      setIsSessionEnded(response.data.is_ended || false);
     } catch (error) {
       setErrorMessage("Failed to load messages.");
       console.error(error);
@@ -183,6 +187,34 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen  }) =
     resetTextareaHeight();
   }, [activeSession]);
 
+  const handleEndSession = async () => {
+    if (!activeSession) return;
+    
+    try {
+      const token = await user.getIdToken();
+      const response = await axios.put(
+        `${process.env.REACT_APP_BACKEND_URL}/sessions/${activeSession}/end`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      // Update sessions list with ended session
+      setSessions(prevSessions => 
+        prevSessions.map(session => 
+          session.id === activeSession ? response.data : session
+        )
+      );
+    } catch (err) {
+      setErrorMessage("Failed to end session");
+      console.error("Error ending session:", err);
+    }
+  };
+
+  // Add helper to get current session data
+  const getCurrentSession = () => {
+    return sessions.find(s => s.id === activeSession);
+  };
+
   return (
     <div className="chat-window">
       <div className="chat-header">
@@ -194,6 +226,13 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen  }) =
         <div className="header-title">
           <span>Chat with Ian</span>
         </div>
+        <button 
+          className="icon-button end-session-button"
+          onClick={handleEndSession}
+          title="End session"
+        >
+          <EndIcon />
+        </button>
       </div>
 
 
@@ -246,23 +285,33 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen  }) =
           <div className="input-container">
             <textarea 
               ref={textareaRef}
-              placeholder="Type a message..." 
+              placeholder={getCurrentSession()?.is_ended ? 
+                "This session has ended. Create a new session to continue chatting." : 
+                "Type a message..."
+              } 
               value={input} 
               onChange={(e) => {
-                e.target.style.height = '52px'; // Reset to min-height first
-                e.target.style.height = `${Math.min(e.target.scrollHeight, 200)}px`;
-                setInput(e.target.value);
+                if (!getCurrentSession()?.is_ended) {
+                  e.target.style.height = '52px';
+                  e.target.style.height = `${Math.min(e.target.scrollHeight, 200)}px`;
+                  setInput(e.target.value);
+                }
               }}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                if (e.key === "Enter" && !e.shiftKey && !getCurrentSession()?.is_ended) {
                   e.preventDefault();
                   sendMessage();
                 }
               }}
+              disabled={getCurrentSession()?.is_ended}
               rows="1"
             />
             <div className="send-button-container">
-              <button onClick={sendMessage} className="send-button">
+              <button 
+                onClick={sendMessage} 
+                className={`send-button ${getCurrentSession()?.is_ended ? 'disabled' : ''}`}
+                disabled={getCurrentSession()?.is_ended}
+              >
                 <SendIcon />
               </button>
             </div>

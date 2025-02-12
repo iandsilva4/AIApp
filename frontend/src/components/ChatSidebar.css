@@ -35,7 +35,6 @@
   align-items: center;
 }
 
-
 .header-button-section {
   display: flex;
   gap: 8px;
@@ -482,4 +481,125 @@
 /* Hide archived section border when no archived items */
 .archived-section-header:not(:has(+ .archived-list)) {
   border-top: none;
+}
+
+/* Update ended session styling */
+.session-title.ended {
+  opacity: 1;
+  color: #666; /* Gray title for ended sessions */
+  font-style: normal;
+}
+
+/* Override the default active blue background for ended sessions */
+.session-item.active {
+  background-color: rgb(240, 250, 255);
+}
+
+.session-item.active[class*='ended'] {
+  background-color: #f0f0f0 !important; /* Force gray background when active */
+}
+
+/* Keep hover state consistent */
+.session-item:hover {
+  background-color: rgb(250, 250, 250);
+}
+
+/* Only show ended badge when session is active */
+.ended-badge {
+  display: none;
+  font-size: 10px;
+  padding: 2px 6px;
+  background-color: #f3f3f3;
+  color: #666;
+  border-radius: 4px;
+  margin-left: 8px;
+  font-weight: normal;
+  border: 1px solid #e0e0e0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.session-item.active .ended-badge {
+  display: inline-block;
+}
+
+/* Remove the background color for ended sessions */
+.session-item:not(.active) .session-title.ended {
+  background-color: transparent;
+}
+
+/* Remove the preview text muting */
+.session-item .session-title.ended + .session-preview {
+  opacity: 1;
+}
+
+.new-chat-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background-color: #007bff;
+  color: white;
+  border-radius: 8px;
+  width: auto;
+  transition: all 0.2s ease;
+}
+
+.new-chat-button:hover {
+  background-color: #0056b3;
+  transform: translateY(-1px);
+}
+
+.new-chat-button .button-text {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.new-chat-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Style for new session item */
+.session-item.new {
+  background-color: #f0f7ff;
+  border: 1px solid #cce5ff;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.session-item.new .session-edit-input {
+  background: transparent;
+  width: 100%;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.session-item.new .session-edit-input:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+/* Animation for new session item */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Make edit actions more visible for new items */
+.session-item.new .edit-actions {
+  opacity: 1;
+}
+
+.session-item.new .edit-actions button {
+  background-color: #f8f9fa;
+}
+
+.session-item.new .edit-actions button:hover {
+  background-color: #e9ecef;
 }
