@@ -8,6 +8,8 @@ from flask_cors import CORS
 from firebase_admin import auth, credentials, initialize_app
 from datetime import datetime, timezone
 from dotenv import load_dotenv
+from firebase_admin import firestore
+from functools import wraps
 
 ################################
 ## INITIALIZATION
@@ -66,6 +68,20 @@ def verify_firebase_token(token):
         print(f"Firebase Token Error: {e}")
         return None
 
+# Add this near the top with other decorators
+def authenticate(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        token = request.headers.get('Authorization')
+        if not token:
+            return jsonify({"error": "Unauthorized"}), 401
+
+        user_data = verify_firebase_token(token.replace("Bearer ", ""))
+        if not user_data:
+            return jsonify({"error": "Unauthorized"}), 401
+
+        return f(user_data['email'], *args, **kwargs)
+    return decorated_function
 
 ################################
 ## Functions
@@ -305,6 +321,33 @@ def chat_with_ai():
     except Exception as e:
         print(f"AI Error: {e}")
         return jsonify({"error": "Failed to get response from AI"}), 500
+
+# Replace the existing update endpoint with this one
+@app.route('/sessions/<int:session_id>', methods=['PUT'])
+@authenticate
+def update_session(user_email, session_id):
+    try:
+        data = request.get_json()
+        title = data.get('title')
+        
+        if not title:
+            return jsonify({'error': 'Title is required'}), 400
+
+        # Get the session from the database
+        session = ChatSession.query.filter_by(id=session_id, user_email=user_email).first()
+        
+        if not session:
+            return jsonify({'error': 'Session not found'}), 404
+
+        # Update the session title
+        session.title = title
+        db.session.commit()
+        
+        return jsonify(session.to_dict())
+
+    except Exception as e:
+        print(f"Error updating session: {str(e)}")
+        return jsonify({'error': 'Failed to update session'}), 500
 
 # Run Flask app
 if __name__ == "__main__":

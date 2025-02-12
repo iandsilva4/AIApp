@@ -1,15 +1,28 @@
+/* Floating Logout Box */
+.logout-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
-  /* Floating Logout Box */
-  .logout-container {
-    position: center;
-    top: 20px;
-    right: 20px;
-    background: #ffffff;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
+/* Use the same icon-button styling as other icons */
+.logout-container .icon-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.logout-container .icon-button:hover {
+  background-color: #f5f5f5;
+  color: #ff3b30;
 }
 
 /* Logout Text */
