@@ -194,10 +194,8 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
   return (
     <>
       {/* Sidebar - Fully disappears when closed */}
-        <div className="chat-sidebar">
-
-          <div className="chat-sidebar-header">
-
+      <div className="chat-sidebar">
+        <div className="chat-sidebar-header">
           <div className="header-title">
             <span>Chats</span>
           </div>
@@ -245,178 +243,175 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
           </div>
         </div>
 
-          {error && (
-            <div className="error-message fade-out">
-              {error}
-            </div>
-          )}
-
-          {/* Add new session input form */}
-          {isNamingSession && (
-            <div className="new-session-input">
-              <div className="new-session-title-input">
-                <input
-                  type="text"
-                  placeholder="Enter session title"
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleCreateSession();
-                    }
-                    if (e.key === 'Escape') {
-                      setIsNamingSession(false);
-                      setNewTitle("");
-                    }
-                  }}
-                  autoFocus
-                />
-              </div>
-              <div className="new-session-sub-buttons">
-                <button className="create-button" onClick={handleCreateSession}>Create</button>
-                <button className="cancel-button" onClick={() => {
-                  setIsNamingSession(false);
-                  setNewTitle("");
-                }}>Cancel</button>
-              </div>
-            </div>
-          )}
-
-          {/* Active Sessions Section */}
-          <div 
-            className="chat-sidebar-section active-section-header"
-            onClick={() => setOpenSection(openSection === 'active' ? null : 'active')}
-          >
-            <span>YOUR SESSIONS ({sessions.filter(s => !s.is_archived).length})</span>
-            <span className={`section-toggle ${openSection === 'active' ? 'open' : ''}`}>▼</span>
+        {error && (
+          <div className="error-message fade-out">
+            {error}
           </div>
-          <ul className={`session-list ${openSection !== 'active' ? 'collapsed' : ''}`}>
-            {sessions
-              .filter(s => !s.is_archived)
-              .map((session) => (
-                <li
-                  key={session.id}
-                  className={`session-item ${session.id === activeSession ? "active" : ""}`}
-                  onClick={() => !session.isNew && setActiveSession(session.id)}
-                >
-                  {!session.isNew && (
-                    <>
-                      <div className="session-header">
-                        {editingSessionId === session.id ? (
-                          <div className="edit-input-container">
-                            <input
-                              type="text"
-                              className="session-edit-input"
-                              value={newTitle}
-                              onChange={(e) => setNewTitle(e.target.value)}
-                              autoFocus
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' && newTitle.trim()) {
-                                  handleUpdateSession(session.id, newTitle);
-                                }
-                                if (e.key === 'Escape') {
-                                  setEditingSessionId(null);
-                                  setNewTitle('');
-                                }
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                            <div className="edit-actions">
-                              <button 
-                                className="save-button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (newTitle.trim()) {
+        )}
+
+        {/* Add new session input form */}
+        {isNamingSession && (
+          <div className="new-session-input">
+            <div className="new-session-title-input">
+              <input
+                type="text"
+                placeholder="Enter session title"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleCreateSession();
+                  }
+                  if (e.key === 'Escape') {
+                    setIsNamingSession(false);
+                    setNewTitle("");
+                  }
+                }}
+                autoFocus
+              />
+            </div>
+            <div className="new-session-sub-buttons">
+              <button className="create-button" onClick={handleCreateSession}>Create</button>
+              <button className="cancel-button" onClick={() => {
+                setIsNamingSession(false);
+                setNewTitle("");
+              }}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        <div className="lists-container">
+          <div className="active-sessions">
+            <div className="chat-sidebar-section active-section-header"
+              onClick={() => setOpenSection(openSection === 'active' ? null : 'active')}>
+              <span>YOUR SESSIONS ({sessions.filter(s => !s.is_archived).length})</span>
+              <span className={`section-toggle ${openSection === 'active' ? 'open' : ''}`}>▼</span>
+            </div>
+            <ul className={`session-list ${openSection !== 'active' ? 'collapsed' : ''}`}>
+              {sessions
+                .filter(s => !s.is_archived)
+                .map((session) => (
+                  <li
+                    key={session.id}
+                    className={`session-item ${session.id === activeSession ? "active" : ""}`}
+                    onClick={() => !session.isNew && setActiveSession(session.id)}
+                  >
+                    {!session.isNew && (
+                      <>
+                        <div className="session-header">
+                          {editingSessionId === session.id ? (
+                            <div className="edit-input-container">
+                              <input
+                                type="text"
+                                className="session-edit-input"
+                                value={newTitle}
+                                onChange={(e) => setNewTitle(e.target.value)}
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' && newTitle.trim()) {
                                     handleUpdateSession(session.id, newTitle);
                                   }
+                                  if (e.key === 'Escape') {
+                                    setEditingSessionId(null);
+                                    setNewTitle('');
+                                  }
                                 }}
-                                title="Save"
-                              >
-                                ✓
-                              </button>
-                              <button 
-                                className="cancel-button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingSessionId(null);
-                                  setNewTitle('');
-                                }}
-                                title="Cancel"
-                              >
-                                ✕
-                              </button>
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                              <div className="edit-actions">
+                                <button 
+                                  className="save-button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (newTitle.trim()) {
+                                      handleUpdateSession(session.id, newTitle);
+                                    }
+                                  }}
+                                  title="Save"
+                                >
+                                  ✓
+                                </button>
+                                <button 
+                                  className="cancel-button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingSessionId(null);
+                                    setNewTitle('');
+                                  }}
+                                  title="Cancel"
+                                >
+                                  ✕
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ) : (
-                          <>
-                            <div className={`session-title ${session.is_ended ? 'ended' : ''}`}>
-                              {session.title}
-                              {session.is_ended && <span className="ended-badge">Ended</span>}
-                            </div>
-                            <div className="session-actions">
-                              <button 
-                                className="edit-button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEditingSessionId(session.id);
-                                  setNewTitle(session.title);
-                                }}
-                                title="Edit chat name"
+                          ) : (
+                            <>
+                              <div className={`session-title ${session.is_ended ? 'ended' : ''}`}>
+                                {session.title}
+                                {session.is_ended && <span className="ended-badge">Ended</span>}
+                              </div>
+                              <div className="session-actions">
+                                <button 
+                                  className="edit-button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingSessionId(session.id);
+                                    setNewTitle(session.title);
+                                  }}
+                                  title="Edit chat name"
+                                >
+                                  <EditIcon />
+                                </button>
+                                <button 
+                                  className="archive-button"
+                                  onClick={(e) => handleArchiveSession(e, session.id)}
+                                  title="Archive chat"
+                                >
+                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M21 8v13H3V8M1 3h22v5H1V3zM10 12h4" />
+                                  </svg>
+                                </button>
+                                <button 
+                                  className="delete-button"
+                                  onClick={(e) => handleDeleteSession(e, session.id)}
+                                  title="Delete chat"
+                                >
+                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                                  </svg>
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        <div className="session-preview">
+                          {session.messages?.length > 0 ? (
+                            <>
+                              <span className="preview-text">
+                                {session.preview || "Empty conversation"}
+                              </span>
+                              <span 
+                                className="timestamp" 
+                                title={getTimeDisplay(session.timestamp).full}
                               >
-                                <EditIcon />
-                              </button>
-                              <button 
-                                className="archive-button"
-                                onClick={(e) => handleArchiveSession(e, session.id)}
-                                title="Archive chat"
-                              >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <path d="M21 8v13H3V8M1 3h22v5H1V3zM10 12h4" />
-                                </svg>
-                              </button>
-                              <button 
-                                className="delete-button"
-                                onClick={(e) => handleDeleteSession(e, session.id)}
-                                title="Delete chat"
-                              >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                  <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                                </svg>
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                      <div className="session-preview">
-                        {session.messages?.length > 0 ? (
-                          <>
-                            <span className="preview-text">
-                              {session.preview || "Empty conversation"}
-                            </span>
-                            <span 
-                              className="timestamp" 
-                              title={getTimeDisplay(session.timestamp).full}
-                            >
-                              {getTimeDisplay(session.timestamp).relative}
-                            </span>
-                          </>
-                        ) : (
-                          <span className="timestamp">No messages yet...</span>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </li>
-              ))}
-          </ul>
+                                {getTimeDisplay(session.timestamp).relative}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="timestamp">No messages yet...</span>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </li>
+                ))}
+            </ul>
+          </div>
 
-          {/* Only show archived section if there are archived sessions */}
           {sessions.some(s => s.is_archived) && (
-            <>
-              <div 
-                className="chat-sidebar-section archived-section-header"
-                onClick={() => setOpenSection(openSection === 'archived' ? null : 'archived')}
-              >
+            <div className="archived-sessions">
+              <div className="chat-sidebar-section archived-section-header"
+                onClick={() => setOpenSection(openSection === 'archived' ? null : 'archived')}>
                 <span>ARCHIVED ({sessions.filter(s => s.is_archived).length})</span>
                 <span className={`section-toggle ${openSection === 'archived' ? 'open' : ''}`}>▼</span>
               </div>
@@ -539,8 +534,9 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
                     </li>
                   ))}
               </ul>
-            </>
+            </div>
           )}
+        </div>
       </div>
     </>
   );
