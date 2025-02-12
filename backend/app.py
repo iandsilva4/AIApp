@@ -6,7 +6,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
 from firebase_admin import auth, credentials, initialize_app
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 from firebase_admin import firestore
 from functools import wraps
@@ -48,6 +48,8 @@ class ChatSession(db.Model):
     messages = db.Column(db.Text, nullable=False, default="[]")
     summary = db.Column(db.Text, nullable=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    is_deleted = db.Column(db.Boolean, nullable=False, default=False)
+    is_archived = db.Column(db.Boolean, nullable=False, default=False)
 
     def to_dict(self):
         return {
@@ -57,15 +59,26 @@ class ChatSession(db.Model):
             "messages": json.loads(self.messages),
             "summary": self.summary,
             "timestamp": self.timestamp.isoformat(),
+            "is_deleted": self.is_deleted,
+            "is_archived": self.is_archived
         }
 
 # Firebase token verification
 def verify_firebase_token(token):
     try:
-        decoded_token = auth.verify_id_token(token)
+        # Add clock tolerance when verifying the token
+        decoded_token = auth.verify_id_token(
+            token,
+            check_revoked=True,
+            clock_skew_seconds=30
+        )
         return decoded_token
+    except auth.RevokedIdTokenError:
+        return None
+    except auth.InvalidIdTokenError:
+        return None
     except Exception as e:
-        print(f"Firebase Token Error: {e}")
+        print(f"Token verification error: {str(e)}")
         return None
 
 # Add this near the top with other decorators
@@ -100,8 +113,13 @@ def generate_ai_response(user_email, session_id, current_message=None, data=None
         # Load existing messages from this session
         current_session_messages = json.loads(session.messages)
 
-        # Fetch all previous sessions (excluding the current one)
-        past_sessions = ChatSession.query.filter(ChatSession.user_email == user_email, ChatSession.id != session_id).order_by(ChatSession.timestamp.desc()).all()
+        # Fetch all previous sessions (excluding archived and deleted ones)
+        past_sessions = ChatSession.query.filter(
+            ChatSession.user_email == user_email,
+            ChatSession.id != session_id,
+            ChatSession.is_deleted == False,
+            ChatSession.is_archived == False
+        ).order_by(ChatSession.timestamp.desc()).all()
 
         # Convert all past session messages into OpenAI format
         formatted_past_messages = []
@@ -246,7 +264,10 @@ def get_sessions():
     user_email = user_data['email']
 
     try:
-        sessions = ChatSession.query.filter_by(user_email=user_email).order_by(ChatSession.timestamp.desc()).all()
+        sessions = ChatSession.query.filter_by(
+            user_email=user_email,
+            is_deleted=False  # Only get non-deleted sessions
+        ).order_by(ChatSession.timestamp.desc()).all()
         return jsonify([s.to_dict() for s in sessions]), 200
     
     except Exception as e:
@@ -348,6 +369,47 @@ def update_session(user_email, session_id):
     except Exception as e:
         print(f"Error updating session: {str(e)}")
         return jsonify({'error': 'Failed to update session'}), 500
+
+@app.route('/sessions/<int:session_id>', methods=['DELETE'])
+@authenticate
+def delete_session(user_email, session_id):
+    try:
+        # Get the session from the database
+        session = ChatSession.query.filter_by(id=session_id, user_email=user_email).first()
+        
+        if not session:
+            return jsonify({'error': 'Session not found'}), 404
+
+        # Soft delete the session
+        session.is_deleted = True
+        db.session.commit()
+        
+        return jsonify({'message': 'Session deleted successfully'})
+
+    except Exception as e:
+        print(f"Error deleting session: {str(e)}")
+        return jsonify({'error': 'Failed to delete session'}), 500
+
+# Add new archive endpoint
+@app.route('/sessions/<int:session_id>/archive', methods=['PUT'])
+@authenticate
+def toggle_archive_session(user_email, session_id):
+    try:
+        # Get the session from the database
+        session = ChatSession.query.filter_by(id=session_id, user_email=user_email).first()
+        
+        if not session:
+            return jsonify({'error': 'Session not found'}), 404
+
+        # Toggle archive status
+        session.is_archived = not session.is_archived
+        db.session.commit()
+        
+        return jsonify(session.to_dict())
+
+    except Exception as e:
+        print(f"Error archiving session: {str(e)}")
+        return jsonify({'error': 'Failed to archive session'}), 500
 
 # Run Flask app
 if __name__ == "__main__":

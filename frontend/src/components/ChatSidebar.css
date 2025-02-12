@@ -79,7 +79,7 @@
   padding-right: 20px;
   color: #666;
   margin-top: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 0px;
   flex-shrink: 0; /* Prevents shrinking */
 }
 
@@ -100,20 +100,62 @@
   font-weight: normal;
 }
 
-/* Make "Most Recent" section scrollable */
+/* Update session list styling */
 .session-list {
-  flex-grow: 1; /* Allow it to expand and take available space */
-  padding-left: 20px;
-  padding-right: 20px;
-  margin: 0; /* Remove all external margin */
-  overflow-y: auto; /* Enable vertical scrolling */
-  scrollbar-gutter: stable;
-  padding-right: 10px;
+  flex: 1 1 auto;
+  padding: 4px 20px 20px 20px;
+  margin: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding-bottom: 20px; /* Add some bottom padding */
-  margin-right: 5px;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+/* Collapsed state */
+.session-list.collapsed {
+  padding: 0;
+  max-height: 0;
+  overflow: hidden;
+}
+
+/* Only apply max-height when archived sessions exist */
+.session-list.has-archived {
+  max-height: 60vh;
+}
+
+.archived-list {
+  max-height: 30vh;
+  flex: 0 1 auto;
+  padding-bottom: 40px;
+}
+
+/* When active sessions are collapsed and archived exists */
+.active-section-header:not(.open) + .session-list.has-archived {
+  max-height: 0;
+  overflow: hidden;
+}
+
+/* When active sessions are collapsed, let archived take more space */
+.active-section-header:not(.open) + .session-list.has-archived + .archived-section-header + .archived-list {
+  max-height: 70vh;
+}
+
+/* Update archived section header */
+.archived-section-header {
+  margin-top: 4px;
+  border-top: 1px solid #eee;
+}
+
+/* Hide the border when no archived items or when collapsed */
+.archived-section-header:not(:has(+ .archived-list)),
+.archived-section-header:has(+ .archived-list.collapsed) {
+  border-top: none;
+  margin-top: 0;
+}
+
+.archived-list {
+  padding-bottom: 40px;
 }
 
 /* Scrollbar Styling - Hidden by Default */
@@ -192,9 +234,30 @@
 /* Message preview styling */
 .session-preview {
   font-size: 12px;
-  color: #999;
+  color: #666;
   margin-top: 5px;
   text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.preview-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timestamp {
+  font-size: 11px;
+  color: #999;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+  display: block;
+}
+
+.timestamp:hover {
+  color: #666;
 }
 
 .session-item .edit-button:hover {
@@ -269,4 +332,154 @@
 
 .edit-actions button:hover {
   background-color: #f0f0f0;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  color: #666;
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Add these styles */
+.session-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.session-item:hover .session-actions {
+  opacity: 1;
+}
+
+.delete-button {
+  opacity: 0;
+  background: none;
+  border: none;
+  padding: 4px;
+  color: #999;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  min-width: 24px;
+  height: 24px;
+}
+
+.delete-button:hover {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.session-item:hover .delete-button {
+  opacity: 1;
+}
+
+.archived-section-header {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.archive-toggle {
+  font-size: 10px;
+  transition: transform 0.2s ease;
+}
+
+.archive-toggle.open {
+  transform: rotate(180deg);
+}
+
+.archive-button,
+.unarchive-button {
+  opacity: 0;
+  background: none;
+  border: none;
+  padding: 4px;
+  color: #999;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  min-width: 24px;
+  height: 24px;
+}
+
+.archive-button:hover {
+  background-color: #f0f0f0;
+  color: #666;
+}
+
+.unarchive-button:hover {
+  background-color: #e6f3ff;
+  color: #007bff;
+}
+
+.session-item:hover .archive-button,
+.session-item:hover .unarchive-button {
+  opacity: 1;
+}
+
+/* Update section headers */
+.active-section-header,
+.archived-section-header {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+  padding: 4px 20px;
+  color: #666;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  transition: background-color 0.2s ease;
+}
+
+.active-section-header:hover,
+.archived-section-header:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Section toggle arrow */
+.section-toggle {
+  font-size: 12px;
+  transition: transform 0.2s ease;
+  opacity: 0.7;
+}
+
+.section-toggle.open {
+  transform: rotate(180deg);
+}
+
+/* When active sessions are collapsed, let archived take more space */
+.active-section-header:not(.open) + .archived-list {
+  max-height: 70vh;
+}
+
+/* Hide archived section border when no archived items */
+.archived-section-header:not(:has(+ .archived-list)) {
+  border-top: none;
 }

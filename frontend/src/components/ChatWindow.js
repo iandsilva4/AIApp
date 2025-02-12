@@ -4,6 +4,7 @@ import "./ChatWindow.css";
 import assistantIcon from '../assets/assistant-icon.svg'; // You'll need to add this icon
 import defaultUserIcon from '../assets/default-user-icon.svg';
 import { ReactComponent as SidebarToggleIcon } from '../assets/sidebar-toggle-icon.svg';
+import { ReactComponent as SendIcon } from '../assets/send-icon.svg';
 import '../styles/shared.css';
 
 
@@ -11,12 +12,54 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen  }) =
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [sessionInputs, setSessionInputs] = useState({}); // Store inputs per session
+  const prevSessionRef = useRef(activeSession); // Track previous session
   const messagesEndRef = useRef(null); // Create a ref for the messages container
+  const textareaRef = useRef(null); // Add ref for textarea
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAIResponding, setIsAIResponding] = useState(false);
+
+  // Reset textarea height
+  const resetTextareaHeight = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '52px'; // Match min-height from CSS
+    }
+  };
+
+  // Handle session switching
+  useEffect(() => {
+    if (prevSessionRef.current !== activeSession) {
+      // Save input from previous session
+      if (prevSessionRef.current) {
+        setSessionInputs(prev => ({
+          ...prev,
+          [prevSessionRef.current]: input
+        }));
+      }
+
+      // Load input for new session
+      if (activeSession) {
+        setInput(sessionInputs[activeSession] || "");
+        // Use setTimeout to ensure the textarea is available after state update
+        setTimeout(() => {
+          if (textareaRef.current) {
+            textareaRef.current.style.height = '52px';
+            textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+          }
+        }, 0);
+      } else {
+        setInput("");
+        resetTextareaHeight();
+      }
+
+      prevSessionRef.current = activeSession;
+    }
+  }, [activeSession, input, sessionInputs]);
 
   // Memoize the fetchMessages function
   const fetchMessages = useCallback(async () => {
-    if (!activeSession) return;
-
+    if (!activeSession || !user) return;
+    setIsLoading(true);
     try {
       const token = await user.getIdToken();
       const response = await axios.get(
@@ -27,8 +70,10 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen  }) =
     } catch (error) {
       setErrorMessage("Failed to load messages.");
       console.error(error);
+    } finally {
+      setIsLoading(false);
     }
-  }, [user, activeSession]); // Add user and activeSession to the dependency array
+  }, [user, activeSession]);
 
   useEffect(() => {
     fetchMessages();
@@ -55,28 +100,50 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen  }) =
       setErrorMessage("No session is active. Please select or create a session.");
       return;
     }
+
+    const userMessage = { role: "user", content: input };
+    
+    // Immediately add user message to the chat
+    setMessages(prevMessages => [...prevMessages, userMessage]);
   
-    // Step 1: Show user message immediately
-    const newMessage = { role: "user", content: input };
-    setMessages((prevMessages) => [...prevMessages, newMessage]);
-    setInput(""); // Clear input field right away
+    // Clear the input and its stored value for this session
+    setInput("");
+    setSessionInputs(prev => ({
+      ...prev,
+      [activeSession]: ""
+    }));
+    resetTextareaHeight();
   
     try {
+      setIsAIResponding(true); // Show loading state
       const token = await user.getIdToken();
   
-      // Step 2: Fetch AI response
+      // Add temporary loading message
+      setMessages(prevMessages => [...prevMessages, 
+        { role: "assistant", content: "...", isLoading: true }
+      ]);
+
+      // Fetch AI response
       const response = await axios.post(
         `${process.env.REACT_APP_BACKEND_URL}/chat/respond`,
         { session_id: activeSession, message: input },
         { headers: { Authorization: `Bearer ${token}` } }
       );
   
-      // Step 3: Add AI response to chat window
-      const botResponse = { role: "assistant", content: response.data.message };
-      setMessages((prevMessages) => [...prevMessages, botResponse]);
+      // Replace loading message with actual response
+      setMessages(prevMessages => 
+        prevMessages.slice(0, -1).concat({ 
+          role: "assistant", 
+          content: response.data.message 
+        })
+      );
     } catch (err) {
       setErrorMessage("Failed to send the message.");
       console.error(err);
+      // Remove loading message on error
+      setMessages(prevMessages => prevMessages.slice(0, -1));
+    } finally {
+      setIsAIResponding(false);
     }
   };
 
@@ -111,6 +178,11 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen  }) =
     }
   }, [errorMessage]);
 
+  // Reset height when active session changes
+  useEffect(() => {
+    resetTextareaHeight();
+  }, [activeSession]);
+
   return (
     <div className="chat-window">
       <div className="chat-header">
@@ -132,38 +204,69 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen  }) =
         )}
         
         <div className="messages" ref={messagesEndRef}>
-          {messages.map((msg, index) => (
-            msg.role === 'assistant' ? (
-              <div key={index} className="message-container assistant">
-                <div className="profile-icon assistant">
-                  <img src={assistantIcon} alt="Assistant" />
+          {isLoading ? (
+            <div className="loading-container">
+              <div className="loading-spinner"></div>
+              <p>Loading messages...</p>
+            </div>
+          ) : (
+            messages.map((msg, index) => (
+              msg.role === 'assistant' ? (
+                <div key={index} className="message-container assistant">
+                  <div className="profile-icon assistant">
+                    <img src={assistantIcon} alt="Assistant" />
+                  </div>
+                  <div className={`message ${msg.role} ${msg.isLoading ? 'loading' : ''}`}>
+                    {msg.isLoading ? (
+                      <div className="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                    ) : (
+                      msg.content
+                    )}
+                  </div>
                 </div>
-                <div className={`message ${msg.role}`}>
-                  {msg.content}
+              ) : (
+                <div key={index} className="message-container user">
+                  <div className="profile-icon user">
+                    {getUserInitials() || <img src={defaultUserIcon} alt="User" />}
+                  </div>
+                  <div className={`message ${msg.role}`}>
+                    {msg.content}
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <div key={index} className="message-container user">
-                <div className="profile-icon user">
-                  {getUserInitials() || <img src={defaultUserIcon} alt="User" />}
-                </div>
-                <div className={`message ${msg.role}`}>
-                  {msg.content}
-                </div>
-              </div>
-            )
-          ))}
+              )
+            ))
+          )}
         </div>
         
         <div className="chat-input">
-          <input type="text" placeholder="Type a message..." value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault(); // Prevents a new line from being added
-                sendMessage();
-              }
-            }}
-          />
-          <button onClick={sendMessage}>Send</button>
+          <div className="input-container">
+            <textarea 
+              ref={textareaRef}
+              placeholder="Type a message..." 
+              value={input} 
+              onChange={(e) => {
+                e.target.style.height = '52px'; // Reset to min-height first
+                e.target.style.height = `${Math.min(e.target.scrollHeight, 200)}px`;
+                setInput(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
+              rows="1"
+            />
+            <div className="send-button-container">
+              <button onClick={sendMessage} className="send-button">
+                <SendIcon />
+              </button>
+            </div>
+          </div>
         </div>
         
     </div>

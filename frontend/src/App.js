@@ -13,19 +13,34 @@ const App = () => {
   const [user, setUser] = useState(null);
   const [activeSession, setActiveSession] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Sidebar starts open
+  const [isAuthReady, setIsAuthReady] = useState(false); // Add this state
 
 
   // Listen for authentication state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      setIsAuthReady(true); // Set this to true when auth state is determined
     });
 
     return () => unsubscribe();
   }, []);
 
+  // Show loading while auth is initializing
+  if (!isAuthReady) {
+    return (
+      <div className="app-container">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Initializing...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login if not authenticated
   if (!user) {
-    return <Login setUser = {setUser}/>;
+    return <Login setUser={setUser} />;
   }
 
   return (
@@ -43,7 +58,6 @@ const App = () => {
               user={user}
               activeSession={activeSession}
               setActiveSession={setActiveSession}
-              isSidebarOpen={isSidebarOpen}
               setIsSidebarOpen={setIsSidebarOpen}
             />
           </div>
