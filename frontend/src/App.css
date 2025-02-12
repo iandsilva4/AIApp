@@ -42,16 +42,6 @@ body, html {
   color: #555; /* Dark gray text */
 }
 
-.header button {
-  padding: 8px 16px;
-  background-color: #007bff; /* Blue button */
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
 /* Content container (Sidebar + Chat Window) */
 .app-content {
   display: flex;
@@ -77,21 +67,41 @@ body, html {
 
 /* Chat window container */
 .chat-window-container {
-  flex: 1; /* Automatically adjusts to fill remaining space */
-  height: 100%; /* Match parent container height */
-  overflow-y: auto; /* Allow vertical scrolling */
+  flex: 1;
+  height: 100%;
+  overflow-y: auto;
   background-color: #ffffff;
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
   box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .app-content {
+    flex-direction: column;
+    height: auto;
+  }
+  .sidebar-container {
+    width: 100%;
+    height: auto;
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+  .chat-window-container {
+    flex: 1;
+  }
 }
 
 @media (max-width: 600px) {
   .sidebar-container {
-    width: 150px; /* Shrink sidebar for small screens */
+    width: 100%;
   }
-
   .chat-window-container {
-    flex: 1; /* Ensure chat window still takes remaining space */
+    flex: 1;
+  }
+  .header {
+    flex-direction: column;
+    text-align: center;
+    padding: 10px;
   }
 }

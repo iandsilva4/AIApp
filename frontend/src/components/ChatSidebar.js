@@ -4,7 +4,7 @@ import "./ChatSidebar.css";
 
 
 
-const ChatSidebar = ({ user, activeSession, setActiveSession }) => {
+const ChatSidebar = ({ user, activeSession, setActiveSession, isSidebarOpen, setIsSidebarOpen }) => {
   const [sessions, setSessions] = useState([]);
   const [newTitle, setNewTitle] = useState("");
   const [isNamingSession, setIsNamingSession] = useState(false);
@@ -55,62 +55,78 @@ const ChatSidebar = ({ user, activeSession, setActiveSession }) => {
   }, [fetchSessions]); // Add it to the dependency array
   
   return (
-    <div className="chat-sidebar">
-      {/* Header with title and optional icons */}
-      <div className="chat-sidebar-header">
-        <span>Chats</span>
-      </div>
-      <button className="new-session-button" onClick={() => setIsNamingSession(true)}>
-          + New Session
-        </button>
-      {/* Input for creating a new session */}
-      {isNamingSession ? (
-        <div className="new-session-input">
-          <div className="new-session-title-input">
-            <input
-              type="text"
-              placeholder="Enter session title"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-            />
+    <>
+      {/* Sidebar - Fully disappears when closed */}
+        <div className="chat-sidebar">
+
+          <div className="chat-sidebar-header">
+
+          <div className="header-title">
+            <span>Chats</span>
           </div>
-          <div className="new-session-sub-buttons">
-            <button className="create-button" onClick={handleCreateSession}>Create</button>
-            <button className="cancel-button" onClick={() => setIsNamingSession(false)}>Cancel</button>
+          
+          <div className = "header-button-section">
+            <div className="sidebar-button">
+              {isSidebarOpen && (
+                <button className="toggle-sidebar" onClick={() => setIsSidebarOpen(false)}>
+                  Hide Sidebar
+                </button>
+              )}
+            </div>
+
+            <div className="new-session-button">
+              <button className="new-session-button" onClick={() => setIsNamingSession(true)}>
+                + New Session
+              </button>
+
+              {/* Input for creating a new session */}
+              {isNamingSession && (
+                <div className="new-session-input">
+                  <div className="new-session-title-input">
+                    <input
+                      type="text"
+                      placeholder="Enter session title"
+                      value={newTitle}
+                      onChange={(e) => setNewTitle(e.target.value)}
+                    />
+                  </div>
+                  <div className="new-session-sub-buttons">
+                    <button className="create-button" onClick={handleCreateSession}>Create</button>
+                    <button className="cancel-button" onClick={() => setIsNamingSession(false)}>Cancel</button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      ) : (
-        <></>
-      )}
-  
-      {error && <p className="error">{error}</p>}
 
-      {/* Most Recent Section */}
-      <div className="chat-sidebar-section">YOUR SESSIONS ({sessions.length})</div>
-      <ul className="session-list">
-        {sessions.map((session) => (
-          <li
-            key={session.id}
-            className={`session-item ${session.id === activeSession ? "active" : ""}`}
-            onClick={() => setActiveSession(session.id)}
-          >
-            {editingSessionId === session.id ? (
-              <>
-                <button onClick={() => setEditingSessionId(null)}>Cancel</button>
-              </>
-            ) : (
-              <>
-                <div className="session-title">{session.title}</div>
-                <div className="session-preview">
-                  {session.preview || "No messages yet..."}
-                </div>
-              </>
-            )}
-          </li>
-        ))}
-      </ul>
-    </div>
+          {error && <p className="error">{error}</p>}
+
+          {/* Most Recent Section */}
+          <div className="chat-sidebar-section">YOUR SESSIONS ({sessions.length})</div>
+          <ul className="session-list">
+            {sessions.map((session) => (
+              <li
+                key={session.id}
+                className={`session-item ${session.id === activeSession ? "active" : ""}`}
+                onClick={() => setActiveSession(session.id)}
+              >
+                {editingSessionId === session.id ? (
+                  <button onClick={() => setEditingSessionId(null)}>Cancel</button>
+                ) : (
+                  <>
+                    <div className="session-title">{session.title}</div>
+                    <div className="session-preview">
+                      {session.preview || "No messages yet..."}
+                    </div>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+      </div>
+    </>
   );
-};
+}  
 
 export default ChatSidebar;

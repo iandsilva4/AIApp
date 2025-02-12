@@ -4,53 +4,61 @@
   color: #333;
   border-radius: 8px 0 0 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  padding: 20px;
   box-sizing:border-box; /**/
   height: 100%;
   max-width: 100%; /* Prevents overflow on small screens */
   overflow: hidden; /* Prevents scrolling on the entire sidebar */
   display: flex;
   flex-direction: column;
+  gap: 10px;
 }
 
 /* Sidebar header */
 .chat-sidebar-header {
+  display: flex;
+  flex-shrink: 0;  /* Prevents flexbox from shrinking it */
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 20px;
+  padding-right: 20px;
   font-size: 18px;
   font-weight: bold;
-  margin-bottom: 10px;
-  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  height: 60px; /* Match the chat window header */
+  box-sizing: border-box;
+  background-color: #fff; /* Ensure consistency */
+}
+
+.header-title {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.header-button-section {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: row;
+  gap: 5px;
+}
+
+
+.sidebar-button {
+
+}
+
+.new-session-button {
+
 }
 
 /* Section titles */
 .chat-sidebar-section {
   font-size: 14px;
   font-weight: bold;
-  padding: 10px;
+  padding-left: 20px;
+  padding-right: 20px;
   color: #666;
   margin-top: 10px;
   margin-bottom: 10px;
   flex-shrink: 0; /* Prevents shrinking */
-}
-
-/* Buttons */
-.chat-sidebar button,
-.new-session-button{
-  background-color: transparent;
-  text-align:left;
-  color: darkgray;
-  padding: 8px 10px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.chat-sidebar button:hover,
-.new-session-button:hover {
-  background-color: transparent;
-  color: royalblue;
 }
 
 /* Styling for the session creation input */
@@ -120,12 +128,15 @@
 /* Make "Most Recent" section scrollable */
 .session-list {
   flex-grow: 1; /* Allow it to expand and take available space */
-  max-height: calc(100vh - 250px); /* Adjust dynamically */
-  padding: 0; /* Remove all internal padding */
+  padding-left: 20px;
+  padding-right: 20px;
   margin: 0; /* Remove all external margin */
   overflow-y: auto; /* Enable vertical scrolling */
   scrollbar-gutter: stable;
   padding-right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 /* Scrollbar Styling - Hidden by Default */
@@ -165,8 +176,6 @@
 
 /* Session item - Smaller width and centered */
 .session-item {
-  margin: 10px auto; /* Center the box horizontally */
-  padding: 10px;
   border: 1px solid #ddd;
   border-color: transparent;
   border-radius: 8px;
@@ -175,6 +184,7 @@
   display: flex;
   flex-direction: column; /* Align items horizontally */
   justify-content: space-between; /* Space out the title and button */
+  padding: 10px;
 }
 
 .session-item:hover {
@@ -209,19 +219,6 @@
   color: #999;
   margin-top: 5px; /* Add some spacing below the title */
   text-align: left;
-}
-
-/* Edit button styling */
-.edit-button {
-  align-self: center; /* Ensure it stays vertically centered */
-  padding: 5px 10px;
-  font-size: 12px;
-  color: white;
-  background-color: #007bff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-left: 10px; /* Add space between the title and button */
 }
 
 .session-item .edit-button:hover {
