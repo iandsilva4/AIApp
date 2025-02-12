@@ -55,15 +55,11 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
   const [isNamingSession, setIsNamingSession] = useState(false);
   const [error, setError] = useState("");
   const [editingSessionId, setEditingSessionId] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showArchived, setShowArchived] = useState(false);
-  const [showActiveSessions, setShowActiveSessions] = useState(true);
   const [openSection, setOpenSection] = useState('active'); // 'active', 'archived', or null
 
   // Fetch existing sessions
   const fetchSessions = useCallback(async () => {
     if (!user) return;
-    setIsLoading(true);
     try {
       const token = await user.getIdToken();
       const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/sessions`, {
@@ -73,8 +69,6 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
     } catch (err) {
       setError("Failed to load sessions.");
       console.error("Error fetching sessions:", err);
-    } finally {
-      setIsLoading(false);
     }
   }, [user]);
 

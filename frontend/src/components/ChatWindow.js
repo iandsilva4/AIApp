@@ -9,7 +9,7 @@ import { ReactComponent as EndIcon } from '../assets/end-icon.svg';
 import '../styles/shared.css';
 
 
-const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sessions, setSessions }) => {
+const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sessions, setSessions, setActiveSession }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -69,15 +69,20 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setMessages(response.data.messages || []);
-      // Store session state
       setIsSessionEnded(response.data.is_ended || false);
     } catch (error) {
-      setErrorMessage("Failed to load messages.");
-      console.error(error);
+      // Only show error if it's not a 404 (session not found)
+      if (error.response?.status !== 404) {
+        setErrorMessage("Failed to load messages.");
+        console.error(error);
+      } else {
+        // If session not found, clear active session
+        setActiveSession(null);
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [user, activeSession]);
+  }, [user, activeSession, setActiveSession]);
 
   useEffect(() => {
     fetchMessages();
@@ -226,61 +231,67 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
         <div className="header-title">
           <span>Chat with Ian</span>
         </div>
-        <button 
-          className="icon-button end-session-button"
-          onClick={handleEndSession}
-          title="End session"
-        >
-          <EndIcon />
-        </button>
+        {activeSession && (
+          <button 
+            className="icon-button end-session-button"
+            onClick={handleEndSession}
+            title="End session"
+          >
+            <EndIcon />
+          </button>
+        )}
       </div>
 
-
-        {errorMessage && (
-          <div className="error-message fade-out">
-            {errorMessage}
-          </div>
-        )}
-        
-        <div className="messages" ref={messagesEndRef}>
-          {isLoading ? (
-            <div className="loading-container">
-              <div className="loading-spinner"></div>
-              <p>Loading messages...</p>
-            </div>
-          ) : (
-            messages.map((msg, index) => (
-              msg.role === 'assistant' ? (
-                <div key={index} className="message-container assistant">
-                  <div className="profile-icon assistant">
-                    <img src={assistantIcon} alt="Assistant" />
-                  </div>
-                  <div className={`message ${msg.role} ${msg.isLoading ? 'loading' : ''}`}>
-                    {msg.isLoading ? (
-                      <div className="typing-indicator">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                      </div>
-                    ) : (
-                      msg.content
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div key={index} className="message-container user">
-                  <div className="profile-icon user">
-                    {getUserInitials() || <img src={defaultUserIcon} alt="User" />}
-                  </div>
-                  <div className={`message ${msg.role}`}>
-                    {msg.content}
-                  </div>
-                </div>
-              )
-            ))
-          )}
+      {errorMessage && (
+        <div className="error-message fade-out">
+          {errorMessage}
         </div>
-        
+      )}
+      
+      <div className="messages" ref={messagesEndRef}>
+        {!activeSession ? (
+          <div className="welcome-message">
+            <p>Welcome! Select a chat or create a new one to get started.</p>
+          </div>
+        ) : isLoading ? (
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Loading messages...</p>
+          </div>
+        ) : (
+          messages.map((msg, index) => (
+            msg.role === 'assistant' ? (
+              <div key={index} className="message-container assistant">
+                <div className="profile-icon assistant">
+                  <img src={assistantIcon} alt="Assistant" />
+                </div>
+                <div className={`message ${msg.role} ${msg.isLoading ? 'loading' : ''}`}>
+                  {msg.isLoading ? (
+                    <div className="typing-indicator">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                  ) : (
+                    msg.content
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div key={index} className="message-container user">
+                <div className="profile-icon user">
+                  {getUserInitials() || <img src={defaultUserIcon} alt="User" />}
+                </div>
+                <div className={`message ${msg.role}`}>
+                  {msg.content}
+                </div>
+              </div>
+            )
+          ))
+        )}
+      </div>
+      
+      {activeSession && (
         <div className="chat-input">
           <div className="input-container">
             <textarea 
@@ -317,7 +328,7 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
             </div>
           </div>
         </div>
-        
+      )}
     </div>
   );
 };

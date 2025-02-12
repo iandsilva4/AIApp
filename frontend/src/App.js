@@ -6,6 +6,7 @@ import Logout from "./components/Logout";
 import { auth } from "./Firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import "./App.css";
+import axios from "axios";
 
 
 const App = () => {
@@ -15,13 +16,19 @@ const App = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Sidebar starts open
   const [isAuthReady, setIsAuthReady] = useState(false); // Add this state
   const [sessions, setSessions] = useState([]);
+  const [isSessionsLoading, setIsSessionsLoading] = useState(true);
 
 
   // Listen for authentication state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setIsAuthReady(true); // Set this to true when auth state is determined
+      setIsAuthReady(true);
+      // Clear active session and sessions when user changes
+      if (!currentUser) {
+        setActiveSession(null);
+        setSessions([]);
+      }
     });
 
     return () => unsubscribe();
@@ -43,15 +50,6 @@ const App = () => {
   if (!user) {
     return <Login setUser={setUser} />;
   }
-
-  // Add this function to handle session updates
-  const handleSessionUpdate = (updatedSession) => {
-    setSessions(prevSessions => 
-      prevSessions.map(session => 
-        session.id === updatedSession.id ? updatedSession : session
-      )
-    );
-  };
 
   return (
     <div className="app-container">
@@ -83,6 +81,7 @@ const App = () => {
             setIsSidebarOpen={setIsSidebarOpen}
             sessions={sessions}
             setSessions={setSessions}
+            isSessionsLoading={isSessionsLoading}
           />
         </div>
       </div>

@@ -105,20 +105,26 @@
   padding: 4px 20px 20px 20px;
   margin: 0;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   display: flex;
   flex-direction: column;
   gap: 4px;
   transition: all 0.2s ease;
+  margin-right: 5px;
+  padding-right: 15px;
 }
 
-/* Collapsed state */
 .session-list.collapsed {
   padding: 0;
   max-height: 0;
   overflow: hidden;
 }
 
-/* Only apply max-height when archived sessions exist */
+.session-list.archived-list:not(.collapsed) {
+  max-height: 100%;
+}
+
+/* Collapsed state */
 .session-list.has-archived {
   max-height: 60vh;
 }
@@ -602,4 +608,31 @@
 
 .session-item.new .edit-actions button:hover {
   background-color: #e9ecef;
+}
+
+/* Make chat sidebar flex container */
+.chat-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Make lists container flex */
+.lists-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Active sessions section */
+.active-sessions {
+  flex: 0 1 auto;
+  min-height: 0;
+}
+
+/* Archived sessions section */
+.archived-sessions {
+  flex: 1;
+  min-height: 0;
 }
