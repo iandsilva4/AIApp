@@ -13,19 +13,40 @@ const App = () => {
   const [user, setUser] = useState(null);
   const [activeSession, setActiveSession] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Sidebar starts open
+  const [isAuthReady, setIsAuthReady] = useState(false); // Add this state
+  const [sessions, setSessions] = useState([]);
 
 
   // Listen for authentication state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+      setIsAuthReady(true);
+      // Clear active session and sessions when user changes
+      if (!currentUser) {
+        setActiveSession(null);
+        setSessions([]);
+      }
     });
 
     return () => unsubscribe();
   }, []);
 
+  // Show loading while auth is initializing
+  if (!isAuthReady) {
+    return (
+      <div className="app-container">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Initializing...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login if not authenticated
   if (!user) {
-    return <Login setUser = {setUser}/>;
+    return <Login setUser={setUser} />;
   }
 
   return (
@@ -43,8 +64,9 @@ const App = () => {
               user={user}
               activeSession={activeSession}
               setActiveSession={setActiveSession}
-              isSidebarOpen={isSidebarOpen}
               setIsSidebarOpen={setIsSidebarOpen}
+              sessions={sessions}
+              setSessions={setSessions}
             />
           </div>
         ) : null}
@@ -55,6 +77,8 @@ const App = () => {
             activeSession={activeSession} 
             isSidebarOpen={isSidebarOpen}
             setIsSidebarOpen={setIsSidebarOpen}
+            sessions={sessions}
+            setSessions={setSessions}
           />
         </div>
       </div>
