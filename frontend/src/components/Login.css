@@ -178,3 +178,14 @@
     width: 90%;
   }
 }
+
+@media (max-width: 600px) {
+  .login-card {
+    width: 90%;
+  }
+
+  .google-login-button {
+    font-size: 14px;
+    padding: 10px;
+  }
+}

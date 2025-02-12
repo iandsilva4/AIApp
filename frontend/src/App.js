@@ -5,13 +5,15 @@ import Login from "./components/Login";
 import Logout from "./components/Logout";
 import { auth } from "./Firebase";
 import { onAuthStateChanged } from "firebase/auth";
-import "./styles.css";
+import "./App.css";
 
 
 const App = () => {
 
   const [user, setUser] = useState(null);
   const [activeSession, setActiveSession] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Sidebar starts open
+
 
   // Listen for authentication state changes
   useEffect(() => {
@@ -33,21 +35,30 @@ const App = () => {
         <Logout user={user} setUser={setUser} />
       </header>
 
-      {/* FLEX CONTAINER FOR SIDEBAR AND CHAT WINDOW */}
-      <div className="app-content">
-        <div className="sidebar-container">
-          <ChatSidebar
-            user={user}
-            activeSession={activeSession}
-            setActiveSession={setActiveSession}
+      {/* Apply 'sidebar-hidden' class when sidebar is closed */}
+      <div className={"app-content"}>
+        {/* Remove sidebar-container when the sidebar is closed */}
+        {isSidebarOpen ? (
+          <div className="sidebar-container">
+            <ChatSidebar
+              user={user}
+              activeSession={activeSession}
+              setActiveSession={setActiveSession}
+              isSidebarOpen={isSidebarOpen} // Pass state
+              setIsSidebarOpen={setIsSidebarOpen} // Pass function
+            />
+          </div>
+        ) : null}
+
+        {/* Chat Window */}
+        <div className="chat-window-container">
+          <ChatWindow 
+            user={user} 
+            activeSession={activeSession} 
+            isSidebarOpen={isSidebarOpen} // Pass state
+            setIsSidebarOpen={setIsSidebarOpen} // Pass function
           />
         </div>
-        <div className="chat-window-container">
-          <ChatWindow
-            user={user}
-            activeSession={activeSession}
-          />
-        </div>  
       </div>
     </div>
   );

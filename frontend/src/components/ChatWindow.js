@@ -3,7 +3,7 @@ import axios from "axios";
 import "./ChatWindow.css";
 
 
-const ChatWindow = ({ user, activeSession }) => {
+const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen  }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -79,34 +79,47 @@ const ChatWindow = ({ user, activeSession }) => {
 
   return (
     <div className="chat-window">
-
-      {errorMessage && (
-        <div className="error-banner">
-          <span>{errorMessage}</span>
-          <button className="close-error" onClick={() => setErrorMessage("")}>&times;</button>
+      <div className="chat-header">
+        <div className="sidebar-button">
+          {!isSidebarOpen && (
+            <button className="toggle-sidebar" onClick={() => setIsSidebarOpen(true)}>
+              Open Sidebar
+            </button>
+          )}
         </div>
-      )}
-      
-      <div className="messages" ref={messagesEndRef}>
-        {messages.map((msg, index) => (
-          <div key={index} className={`message ${msg.role}`}>
-            {msg.content}
+        <div className="header-title">
+          <span>Chat with Ian</span>
+        </div>
+      </div>
+
+
+        {errorMessage && (
+          <div className="error-banner">
+            <span>{errorMessage}</span>
+            <button className="close-error" onClick={() => setErrorMessage("")}>&times;</button>
           </div>
-          
-        ))}
-      </div>
-      
-      <div className="chat-input">
-        <input type="text" placeholder="Type a message..." value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault(); // Prevents a new line from being added
-              sendMessage();
-            }
-          }}
-        />
-        <button onClick={sendMessage}>Send</button>
-      </div>
-      
+        )}
+        
+        <div className="messages" ref={messagesEndRef}>
+          {messages.map((msg, index) => (
+            <div key={index} className={`message ${msg.role}`}>
+              {msg.content}
+            </div>
+            
+          ))}
+        </div>
+        
+        <div className="chat-input">
+          <input type="text" placeholder="Type a message..." value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault(); // Prevents a new line from being added
+                sendMessage();
+              }
+            }}
+          />
+          <button onClick={sendMessage}>Send</button>
+        </div>
+        
     </div>
   );
 };
