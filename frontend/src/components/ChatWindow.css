@@ -139,6 +139,49 @@
   padding: 12px 18px;
 }
 
+/* React Markdown styling */
+.message.user > p:first-child {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.message.user > p:last-child {
+  margin-bottom: 0;
+}
+
+.message.user > p {
+  margin: 0.3em 0;
+}
+
+/* List styling */
+.message.user > ul,
+.message.user > ol {
+  margin: 0.3em 0;
+  padding-left: 2em;
+}
+
+.message.user li {
+  margin: 0.1em 0;
+  padding-left: 0.3em;
+}
+
+.message.user ol {
+  list-style-position: outside;
+}
+
+.message.user ol li::marker {
+  font-weight: normal;
+}
+
+/* Other markdown elements */
+.message.user strong {
+  font-weight: 600;
+}
+
+.message.user em {
+  font-style: italic;
+}
+
 .message.assistant {
   align-self: flex-start;
   /*background-color: #f5f5f5;*/
