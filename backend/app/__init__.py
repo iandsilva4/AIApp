@@ -4,6 +4,7 @@ from flask_migrate import Migrate
 from flask_cors import CORS
 from firebase_admin import credentials, initialize_app
 from config import Config
+import logging
 
 # Initialize Flask extensions
 db = SQLAlchemy()
@@ -12,6 +13,13 @@ migrate = Migrate()
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+    
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    logger = logging.getLogger(__name__)
     
     # Initialize extensions
     CORS(app)

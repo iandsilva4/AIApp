@@ -12,9 +12,10 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [openSection, setOpenSection] = useState('active'); // 'active', 'archived', or null
 
-  // Fetch existing sessions
-  const fetchSessions = useCallback(async () => {
+  // Fetch existing sessions with retry mechanism
+  const fetchSessions = useCallback(async (retryCount = 0) => {
     if (!user) return;
+    
     try {
       const token = await user.getIdToken();
       const response = await axios.get(`${process.env.REACT_APP_BACKEND_URL}/sessions`, {
@@ -22,17 +23,36 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
       });
       setSessions(response.data);
     } catch (err) {
-      setError("Failed to load sessions.");
       console.error("Error fetching sessions:", err);
+      
+      // If we get a 401 and haven't exceeded retries, try again after a delay
+      if (err.response?.status === 401 && retryCount < 3) {
+        console.log(`Retrying fetch sessions (attempt ${retryCount + 1})...`);
+        setTimeout(() => {
+          fetchSessions(retryCount + 1);
+        }, 1000); // Wait 1 second before retrying
+      } else {
+        setError("Failed to load sessions.");
+      }
     }
   }, [user, setSessions]);
 
-  // Add this effect to refresh sessions when activeSession changes
+  // Initial fetch on mount or user change
   useEffect(() => {
     if (user) {
+      // Add small initial delay to allow Firebase to fully initialize
+      setTimeout(() => {
+        fetchSessions();
+      }, 500);
+    }
+  }, [fetchSessions, user]);
+
+  // Refresh when active session changes
+  useEffect(() => {
+    if (activeSession) {
       fetchSessions();
     }
-  }, [fetchSessions, user, activeSession]); // Add activeSession as dependency
+  }, [fetchSessions, activeSession]);
 
   const handleError = (message, error) => {
     setError(message);
