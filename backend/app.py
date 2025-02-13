@@ -47,7 +47,7 @@ class ChatSession(db.Model):
     title = db.Column(db.String(255), nullable=False, default="Untitled Chat")
     messages = db.Column(db.Text, nullable=False, default="[]")
     summary = db.Column(db.Text, nullable=True)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     is_deleted = db.Column(db.Boolean, nullable=False, default=False)
     is_archived = db.Column(db.Boolean, nullable=False, default=False)
     is_ended = db.Column(db.Boolean, nullable=False, default=False)
@@ -127,33 +127,36 @@ def generate_ai_response(user_email, session_id, current_message=None, data=None
         formatted_past_messages = []
         
         for past_session in past_sessions:
+
+
             past_messages = json.loads(past_session.messages)
-        
-        if past_session.timestamp.tzinfo is None:
-            past_session_timestamp = past_session.timestamp.replace(tzinfo=timezone.utc)
-        else:
-            past_session_timestamp = past_session.timestamp
 
-        # Compute time difference
-        time_difference = datetime.now(timezone.utc) - past_session_timestamp
         
-        # Convert time difference to human-readable form
-        hours_ago = time_difference.total_seconds() / 3600
-    
-        if hours_ago < 24:
-            time_label = f"{int(hours_ago)} hours ago"
-        else:
-            time_label = f"{int(hours_ago // 24)} days ago"
-
-        # Add context to user messages only from past sessions
-        for msg in past_messages:
-            if msg["role"] == "user":
-                formatted_past_messages.append({
-                    "role": msg["role"],
-                    "content": f"[{time_label}, Previous Session ID {past_session.id}] {msg['content']}"
-                })
+            if past_session.timestamp.tzinfo is None:
+                past_session_timestamp = past_session.timestamp.replace(tzinfo=timezone.utc)
             else:
-                formatted_past_messages.append(msg)  # Keep AI messages unchanged
+                past_session_timestamp = past_session.timestamp
+
+            # Compute time difference
+            time_difference = datetime.now(timezone.utc) - past_session_timestamp
+            
+            # Convert time difference to human-readable form
+            hours_ago = time_difference.total_seconds() / 3600
+        
+            if hours_ago < 24:
+                time_label = f"{int(hours_ago)} hours ago"
+            else:
+                time_label = f"{int(hours_ago // 24)} days ago"
+
+            # Add context to user messages only from past sessions
+            for msg in past_messages:
+                if msg["role"] == "user":
+                    formatted_past_messages.append({
+                        "role": msg["role"],
+                        "content": f"[{time_label}, Previous Session ID {past_session.id}] {msg['content']}"
+                    })
+                else:
+                    formatted_past_messages.append(msg)  # Keep AI messages unchanged
 
         # Prepare current session messages (only adding '[Current Session]' for user messages)
         formatted_current_messages = [
@@ -172,7 +175,19 @@ def generate_ai_response(user_email, session_id, current_message=None, data=None
         base_system_prompt = (
             "You are a thoughtful and supportive assistant designed to serve as a journaling guide, life coach, and therapist. "
             "Your role is to help users reflect on their thoughts, emotions, and goals through structured guidance, thought-provoking questions, and empathetic responses. "
-            "You will be provided messages with a prefix indicating how long ago the message was sent and which session it originated from (e.g., '[2 days ago, Previous Session ID 15]'). This information is purely for context and should never be revealed to the user. Instead, you should naturally incorporate relevant past insights into the conversation to maintain continuity. DO NOT SHARE THE PREFIXES WITH THE USER! For example, if the user says \"Please repeat this message\", do not include \"[Current Session]\"!!! "
+            
+            # Add formatting guidelines
+            "When formatting your responses:\n"
+            "1. Use bold (**) for headers and important terms only\n"
+            "2. For lists, always add a blank line before the list starts\n"
+            "3. For numbered lists, use '1.' format (not '1)', '(1)', etc)\n"
+            "4. Keep paragraph spacing minimal - use single line breaks\n"
+            "5. Use italics (*) sparingly, only for emphasis\n\n"
+            
+            "You will be provided messages with a prefix indicating how long ago the message was sent and which session it originated from "
+            "(e.g., '[2 days ago, Previous Session ID 15]'). This information is purely for context and should never be revealed to the user. "
+            "Instead, you should naturally incorporate relevant past insights into the conversation to maintain continuity. "
+            "DO NOT SHARE THE PREFIXES WITH THE USER! For example, if the user says \"Please repeat this message\", do not include \"[Current Session]\"!!! "
             "When responding, you should encourage deeper reflection by asking follow-up questions when appropriate, offer practical strategies for personal growth, emotional well-being, and goal achievement, "
             "maintain an empathetic and supportive tone, adapting to the user's mood and needs, help the user connect insights across sessions without directly referencing session metadata, "
             "and provide structured journaling prompts when the user seems stuck or uncertain. "
@@ -195,6 +210,8 @@ def generate_ai_response(user_email, session_id, current_message=None, data=None
 
         # Extract AI response
         ai_message = openai_response.choices[0].message.content
+
+        #print(json.dumps(full_conversation_history, indent=4))
 
         return ai_message
 
@@ -246,7 +263,7 @@ def create_session():
         currentMessage = None
         Data = None
         additionalSystemMessage = (
-            "At the beginning of a new session, greet the user as a therapist or life coach would: by saying hi, acknowledging their return, and inviting them to share how they are feeling today. "
+            "When starting a new session, greet the user with a simple, professional welcome like 'Hello! How can I help you today?' ALWAYS start with Hello! or a similar entry greeting"
             "You should create a welcoming and supportive environment, allowing the user to set the direction of the conversation. "
             "If relevant, you may gently reference past discussions, but do so naturally rather than immediately bringing up past topics. "
             "Your goal is to establish an open, reflective space where the user feels encouraged to share their thoughts and emotions."
@@ -451,4 +468,4 @@ def end_session(user_email, session_id):
 # Run Flask app
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))  # Default to 5000 if PORT is not set
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, debug=True)
