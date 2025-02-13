@@ -7,6 +7,7 @@ import { ReactComponent as SidebarToggleIcon } from '../assets/sidebar-toggle-ic
 import { ReactComponent as SendIcon } from '../assets/send-icon.svg';
 import { ReactComponent as EndIcon } from '../assets/end-icon.svg';
 import '../styles/shared.css';
+import ReactMarkdown from 'react-markdown';
 
 
 const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sessions, setSessions, setActiveSession }) => {
@@ -263,14 +264,14 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
                     <img src={assistantIcon} alt="Assistant" />
                   </div>
                   <div className={`message ${msg.role} ${msg.isLoading ? 'loading' : ''}`}>
-                    {msg.isLoading || isAIResponding ? (
+                    {msg.isLoading && index === messages.length - 1 ? (
                       <div className="typing-indicator">
                         <span></span>
                         <span></span>
                         <span></span>
                       </div>
                     ) : (
-                      msg.content
+                      <ReactMarkdown>{msg.content}</ReactMarkdown>
                     )}
                   </div>
                 </div>

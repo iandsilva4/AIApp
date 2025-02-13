@@ -9,45 +9,23 @@ import '../styles/shared.css';
 const getTimeDisplay = (timestamp) => {
   if (!timestamp) return "No messages yet...";
   
-  const date = new Date(timestamp);
+  // Explicitly parse the UTC timestamp and convert to local time
+  const date = new Date(timestamp + 'Z'); // Adding 'Z' ensures we parse as UTC
   const now = new Date();
-  const diffInSeconds = Math.floor((now - date) / 1000);
-  const diffInMinutes = Math.floor(diffInSeconds / 60);
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  const diffInDays = Math.floor(diffInHours / 24);
-  const diffInMonths = Math.floor(diffInDays / 30);
 
-  // Format the full timestamp for hover
-  const fullTimestamp = date.toLocaleString('en-US', {
+
+  // Format the full timestamp for hover using local timezone
+  const fullTimestamp = new Intl.DateTimeFormat('en-US', {
     month: 'short',
     day: 'numeric',
     year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
     hour: 'numeric',
     minute: '2-digit',
-    hour12: true
-  });
+    hour12: true,
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone // Use user's timezone
+  }).format(date);
 
-  // Get relative time
-  let relativeTime;
-  if (diffInSeconds < 60) {
-    relativeTime = 'Just now';
-  } else if (diffInMinutes < 60) {
-    relativeTime = `${diffInMinutes}m ago`;
-  } else if (diffInHours < 24) {
-    relativeTime = diffInHours === 1 ? '1 hour ago' : `${diffInHours} hours ago`;
-  } else if (diffInDays < 7) {
-    relativeTime = diffInDays === 1 ? 'Yesterday' : `${diffInDays} days ago`;
-  } else if (diffInDays < 30) {
-    const weeks = Math.floor(diffInDays / 7);
-    relativeTime = weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
-  } else if (diffInMonths < 12) {
-    relativeTime = diffInMonths === 1 ? '1 month ago' : `${diffInMonths} months ago`;
-  } else {
-    const years = Math.floor(diffInMonths / 12);
-    relativeTime = years === 1 ? '1 year ago' : `${years} years ago`;
-  }
-
-  return { relative: relativeTime, full: fullTimestamp };
+  return { relative: fullTimestamp, full: fullTimestamp };
 };
 
 const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, sessions, setSessions }) => {
@@ -191,6 +169,15 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
     }
   }, [error]);
 
+  // Update the click handler for section headers
+  const handleSectionToggle = (section) => {
+    if (openSection === section) {
+      setOpenSection(null);
+    } else {
+      setOpenSection(section);
+    }
+  };
+
   return (
     <>
       {/* Sidebar - Fully disappears when closed */}
@@ -283,7 +270,7 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
         <div className="lists-container">
           <div className="active-sessions">
             <div className="chat-sidebar-section active-section-header"
-              onClick={() => setOpenSection(openSection === 'active' ? null : 'active')}>
+              onClick={() => handleSectionToggle('active')}>
               <span>YOUR SESSIONS ({sessions.filter(s => !s.is_archived).length})</span>
               <span className={`section-toggle ${openSection === 'active' ? 'open' : ''}`}>▼</span>
             </div>
@@ -411,11 +398,11 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
           {sessions.some(s => s.is_archived) && (
             <div className="archived-sessions">
               <div className="chat-sidebar-section archived-section-header"
-                onClick={() => setOpenSection(openSection === 'archived' ? null : 'archived')}>
+                onClick={() => handleSectionToggle('archived')}>
                 <span>ARCHIVED ({sessions.filter(s => s.is_archived).length})</span>
                 <span className={`section-toggle ${openSection === 'archived' ? 'open' : ''}`}>▼</span>
               </div>
-              <ul className={`session-list archived-list ${openSection !== 'archived' ? 'collapsed' : ''}`}>
+              <ul className={`session-list ${openSection !== 'archived' ? 'collapsed' : ''}`}>
                 {sessions
                   .filter(s => s.is_archived)
                   .map((session) => (

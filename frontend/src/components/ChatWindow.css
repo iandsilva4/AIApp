@@ -141,9 +141,52 @@
 
 .message.assistant {
   align-self: flex-start;
-  background-color: #f5f5f5;
+  /*background-color: #f5f5f5;*/
   text-align: left;
   margin-right: auto;
+}
+
+/* React Markdown styling */
+.message.assistant > p:first-child {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.message.assistant > p:last-child {
+  margin-bottom: 0;
+}
+
+.message.assistant > p {
+  margin: 0.3em 0;
+}
+
+/* List styling */
+.message.assistant > ul,
+.message.assistant > ol {
+  margin: 0.3em 0;
+  padding-left: 2em;
+}
+
+.message.assistant li {
+  margin: 0.1em 0;
+  padding-left: 0.3em;
+}
+
+.message.assistant ol {
+  list-style-position: outside;
+}
+
+.message.assistant ol li::marker {
+  font-weight: normal;
+}
+
+/* Other markdown elements */
+.message.assistant strong {
+  font-weight: 600;
+}
+
+.message.assistant em {
+  font-style: italic;
 }
 
 /* Profile icon styling */
