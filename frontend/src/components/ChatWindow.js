@@ -281,7 +281,7 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
                     {getUserInitials() || <img src={defaultUserIcon} alt="User" />}
                   </div>
                   <div className={`message ${msg.role}`}>
-                    {msg.content}
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
                   </div>
                 </div>
               )
