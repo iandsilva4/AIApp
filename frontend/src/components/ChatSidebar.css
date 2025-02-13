@@ -61,8 +61,8 @@
 }
 
 .icon-button svg {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
 }
 
 /* Remove old button styles */
@@ -72,14 +72,32 @@
 
 /* Section titles */
 .chat-sidebar-section {
-  font-size: 14px;
-  font-weight: bold;
-  padding-left: 20px;
-  padding-right: 20px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+  padding: 8px 20px;
   color: #666;
-  margin-top: 10px;
-  margin-bottom: 0px;
-  flex-shrink: 0; /* Prevents shrinking */
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  transition: background-color 0.2s ease;
+  margin-top: 8px;
+}
+
+.chat-sidebar-section:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Section toggle arrow */
+.section-toggle {
+  font-size: 10px;
+  transition: transform 0.3s ease;
+  opacity: 0.7;
+}
+
+.section-toggle.open {
+  transform: rotate(180deg);
 }
 
 /* Session edit input */
@@ -105,25 +123,23 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  gap: 8px;
-  margin-right: 8px;
+  gap: 0;
 }
 
-/* Active sessions section */
-.active-sessions {
-  display: flex;
-  flex-direction: column;
-  min-height: 40px;
-}
-
-/* Archived sessions section */
+/* Active and archived sections */
+.active-sessions,
 .archived-sessions {
   display: flex;
   flex-direction: column;
-  min-height: 40px;
 }
 
-/* Session lists - both active and archived */
+.archived-sessions {
+  border-top: 1px solid #eee;
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+/* Session lists */
 .session-list {
   padding: 4px 20px 20px 20px;
   margin: 0;
@@ -131,58 +147,21 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  transition: max-height 0.3s ease;
+  transition: max-height 0.3s ease, padding 0.3s ease;
   min-height: 0;
 }
 
 /* Collapsed state */
 .session-list.collapsed {
-  padding: 0;
   max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
   overflow: hidden;
 }
 
 /* Expanded state */
 .session-list:not(.collapsed) {
   max-height: calc(85vh - 150px);
-}
-
-/* Section headers */
-.active-section-header,
-.archived-section-header {
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 4px 20px;
-  color: #666;
-  font-size: 12px;
-  letter-spacing: 0.5px;
-  transition: background-color 0.2s ease;
-}
-
-/* Remove all max-height constraints */
-.session-list.has-archived,
-.archived-list {
-  max-height: none;
-}
-
-/* Update archived section header */
-.archived-section-header {
-  margin-top: 4px;
-  border-top: 1px solid #eee;
-  transition: margin-top 0.3s ease; /* Smooth transition */
-}
-
-/* Hide the border when no archived items or when collapsed */
-.archived-section-header:not(:has(+ .archived-list)),
-.archived-section-header:has(+ .archived-list.collapsed) {
-  border-top: none;
-  margin-top: 0;
-}
-
-.archived-list {
-  padding-bottom: 40px;
 }
 
 /* Scrollbar Styling - Hidden by Default */
@@ -422,13 +401,6 @@
   opacity: 1;
 }
 
-.archived-section-header {
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
 .archive-toggle {
   font-size: 10px;
   transition: transform 0.2s ease;
@@ -468,37 +440,6 @@
 .session-item:hover .archive-button,
 .session-item:hover .unarchive-button {
   opacity: 1;
-}
-
-/* Update section headers */
-.active-section-header,
-.archived-section-header {
-  cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  user-select: none;
-  padding: 4px 20px;
-  color: #666;
-  font-size: 12px;
-  letter-spacing: 0.5px;
-  transition: background-color 0.2s ease;
-}
-
-.active-section-header:hover,
-.archived-section-header:hover {
-  background-color: rgba(0, 0, 0, 0.02);
-}
-
-/* Section toggle arrow */
-.section-toggle {
-  font-size: 12px;
-  transition: transform 0.2s ease;
-  opacity: 0.7;
-}
-
-.section-toggle.open {
-  transform: rotate(180deg);
 }
 
 /* Update ended session styling */
@@ -620,4 +561,20 @@
 
 .session-item.new .edit-actions button:hover {
   background-color: #e9ecef;
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+}
+
+.icon-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.session-actions button svg {
+  width: 16px;
+  height: 16px;
+  display: block;
 }

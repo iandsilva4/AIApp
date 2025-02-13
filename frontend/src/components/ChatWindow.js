@@ -194,7 +194,9 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
     
     try {
       const token = await user.getIdToken();
-      const response = await axios.put(
+      
+      // First end the session
+      const endResponse = await axios.put(
         `${process.env.REACT_APP_BACKEND_URL}/sessions/${activeSession}/end`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
@@ -203,9 +205,10 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
       // Update sessions list with ended session
       setSessions(prevSessions => 
         prevSessions.map(session => 
-          session.id === activeSession ? response.data : session
+          session.id === activeSession ? endResponse.data : session
         )
       );
+
     } catch (err) {
       setErrorMessage("Failed to end session");
       console.error("Error ending session:", err);
