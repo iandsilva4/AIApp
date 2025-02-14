@@ -275,7 +275,7 @@ def update_user_summary(user_email):
     try:
         # Get all past session summaries
         all_sessions = ChatSession.query.filter_by(
-            user_email=user_email, is_deleted=False, is_ended=True
+            user_email=user_email, is_deleted=False, is_archived=False, is_ended=True
         ).order_by(ChatSession.timestamp.desc()).all()
 
         # Create list of session summaries and embeddings dictionary
