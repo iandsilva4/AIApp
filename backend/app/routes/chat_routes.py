@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from app.models.chat_session import ChatSession
 from app.models.user_summary import UserSummary
-from app.services.ai_service import generate_ai_response, generateSessionSummary, generateUserSummary
+from app.services.ai_service import generate_ai_response, generateSessionSummary, generateUserSummary, generate_embedding
 from app.utils.decorators import authenticate
 from app.__init__ import db
 import json
@@ -55,21 +55,10 @@ def create_session(user_email):
         db.session.add(session)
         db.session.commit()
 
-        # Generate AI's first message
-        additionalSystemMessage = (
-            "When starting a new session, greet the user with a simple, professional welcome like 'Hello! How can I help you today?' "
-            "ALWAYS start with Hello! or a similar entry greeting"
-        )
-
-        # Get user summary if it exists
-        user_summary = UserSummary.query.filter_by(user_email=user_email).first()
-        summary_text = user_summary.summary if user_summary else None
-
         # Generate AI response
         ai_message = generate_ai_response(
             messages=[],
-            additional_system_prompt=additionalSystemMessage,
-            user_summary=summary_text
+            user_email=user_email
         )
 
         # Save AI's first message
@@ -116,12 +105,13 @@ def delete_session(user_email, session_id):
         session = ChatSession.query.filter_by(id=session_id, user_email=user_email).first()
         if not session:
             return jsonify({'error': 'Session not found'}), 404
+        
+        if not session.is_ended:
+            end_session(user_email, session_id)
 
         session.is_deleted = True
         session.is_archived = True
         session.is_ended = True
-
-        update_user_and_session_summaries(user_email)
 
         db.session.commit()
         
@@ -140,15 +130,21 @@ def toggle_archive_session(user_email, session_id):
         if not session:
             return jsonify({'error': 'Session not found'}), 404
 
+        # Generate summary from messages
+        messages = json.loads(session.messages)
+        if not session.summary:
+            session.summary = generateSessionSummary(messages)
+        if not session.embedding and session.summary:
+            # Generate embedding for this summary
+            embedding = generate_embedding(session.summary)
+            session.embedding = json.dumps(embedding) if embedding else None  # Only store if valid
+            
         #switch status
         session.is_archived = not session.is_archived
-        
-        #if archived, end session and update summaries
-        if session.is_archived:
-            session.is_ended = True
-            update_user_and_session_summaries(user_email)
-        
         db.session.commit()
+
+        # Update user summary after session ends
+        update_user_summary(user_email)
         
         return jsonify(session.to_dict())
 
@@ -165,14 +161,21 @@ def end_session(user_email, session_id):
         if not session:
             return jsonify({'error': 'Session not found'}), 404
 
+        # Generate summary from messages
+        messages = json.loads(session.messages)
+        session.summary = generateSessionSummary(messages)
+
+        # Generate embedding for this summary
+        session.embedding = json.dumps(generate_embedding(session.summary))
+
         # Mark session as ended
         session.is_ended = True
-
-        # Update summaries
-        update_user_and_session_summaries(user_email)
-
         db.session.commit()
+
         logger.info(f"[User: {user_email}] Successfully ended session {session_id} and generated summaries")
+
+        # Update user summary after session ends
+        update_user_summary(user_email)
         
         return jsonify({
             **session.to_dict(),
@@ -183,7 +186,6 @@ def end_session(user_email, session_id):
         logger.error(f"[User: {user_email}] Error ending session: {str(e)}")
         db.session.rollback()
         return jsonify({'error': 'Failed to end session'}), 500
-
 
 @chat_bp.route('/sessions/<int:session_id>', methods=['GET'])
 @authenticate
@@ -227,25 +229,16 @@ def chat_with_ai(user_email):
 
         # Load existing messages
         current_messages = json.loads(session.messages)
-        
-        # Get user summary if it exists
-        user_summary = UserSummary.query.filter_by(user_email=user_email).first()
-        summary_text = user_summary.summary if user_summary else None
-        session_summaries = user_summary.session_summaries if user_summary else None
 
-        # Get system prompt
-        additional_system_prompt = ""
+        current_messages.append({"role": "user", "content": message})
 
         # Generate AI response
         ai_response = generate_ai_response(
             messages=current_messages,
-            additional_system_prompt=additional_system_prompt,
-            user_summary=summary_text,
-            session_summaries=session_summaries
+            user_email=user_email
         )
 
         # Update messages
-        current_messages.append({"role": "user", "content": message})
         current_messages.append({"role": "assistant", "content": ai_response})
 
         # Save updated messages
@@ -260,49 +253,71 @@ def chat_with_ai(user_email):
         db.session.rollback()
         return jsonify({"error": "Failed to get response from AI"}), 500
 
-
-def update_user_and_session_summaries(user_email):
-    """Update session summaries and overall user summary"""
-    # Get all session summaries for this user
-    all_sessions = ChatSession.query.filter_by(
+def update_session_summaries(session_id, user_email):
+    """Generate summary for a specific session"""
+    # Get the specific session
+    session = ChatSession.query.filter_by(
+        id=session_id,
         user_email=user_email,
-        is_deleted=False,
-        is_archived=False,
-        is_ended=True
-    ).order_by(ChatSession.timestamp.desc()).all()
+        is_deleted=False
+    ).first()
 
-    # Generate session summaries for any sessions missing them
-    for s in all_sessions:
-        if not s.summary:
-            messages = json.loads(s.messages)
-            s.summary = generateSessionSummary(messages)
-    
-    session_summaries = [s.summary for s in all_sessions if s.summary]
-    
-    if session_summaries:
-        # Generate/update user summary
-        user_summary = UserSummary.query.filter_by(user_email=user_email).first()
-        new_user_summary = generateUserSummary(session_summaries)
+    if session and not session.summary:
+        messages = json.loads(session.messages)
+        session.summary = generateSessionSummary(messages)
         
-        # Create a list of session summary objects with metadata
-        session_summary_objects = []
-        for s in all_sessions:
-            if s.summary:
-                session_summary_objects.append({
-                    'session_id': s.id,
-                    'title': s.title,
-                    'timestamp': s.timestamp.isoformat(),
-                    'summary': s.summary
+    return session.summary if session else None
+
+def update_user_summary(user_email):
+    """
+    Update the user's long-term summary after each session.
+    """
+    try:
+        # Get all past session summaries
+        all_sessions = ChatSession.query.filter_by(
+            user_email=user_email, is_deleted=False, is_ended=True
+        ).order_by(ChatSession.timestamp.desc()).all()
+
+        # Create list of session summaries and embeddings dictionary
+        session_summaries = []
+        session_embeddings = {}
+
+        for session in all_sessions:
+            if session.summary:
+                session_summaries.append({
+                    'session_id': session.id,
+                    'summary': session.summary,
+                    'timestamp': session.timestamp.isoformat()
                 })
-        
-        if user_summary:
-            user_summary.summary = new_user_summary
-            user_summary.session_summaries = json.dumps(session_summary_objects)
-            user_summary.updated_at = datetime.now(timezone.utc)
-        else:
-            new_user_summary_record = UserSummary(
-                user_email=user_email,
-                summary=new_user_summary,
-                session_summaries=json.dumps(session_summary_objects)
-            )
-            db.session.add(new_user_summary_record)
+                if session.embedding:  # Store embedding if it exists
+                        session_embeddings[str(session.id)] = (
+                            json.loads(session.embedding) if isinstance(session.embedding, str) else session.embedding
+    )
+
+        if session_summaries:
+            # Generate an overall user summary from session summaries
+            new_user_summary = generateUserSummary([s['summary'] for s in session_summaries])
+
+            # Update or create user summary in the database
+            user_summary = UserSummary.query.filter_by(user_email=user_email).first()
+            
+            if user_summary:
+                user_summary.summary = new_user_summary
+                user_summary.session_summaries = json.dumps(session_summaries)
+                user_summary.session_embeddings = json.dumps(session_embeddings)
+                user_summary.updated_at = datetime.now(timezone.utc)
+            else:
+                new_user_summary_record = UserSummary(
+                    user_email=user_email,
+                    summary=new_user_summary,
+                    session_summaries=json.dumps(session_summaries),
+                    session_embeddings=json.dumps(session_embeddings)
+                )
+                db.session.add(new_user_summary_record)
+
+            db.session.commit()
+
+    except Exception as e:
+        logger.error(f"User Summary Update Error: {e}")
+
+            
