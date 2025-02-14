@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ReactComponent as EditIcon } from '../assets/edit-icon.svg';
 import { ReactComponent as DeleteIcon } from '../assets/delete-icon.svg';
 import { ReactComponent as ArchiveIcon } from '../assets/archive-icon.svg';
@@ -18,7 +18,9 @@ const SessionItem = ({
   newTitle,
   onTitleChange,
   onSaveTitle,
-  onCancelEdit 
+  onCancelEdit,
+  isArchiving = false,
+  isDeleting = false
 }) => {
   const getTimeDisplay = (timestamp) => {
     if (!timestamp) return "No messages yet...";
@@ -33,22 +35,41 @@ const SessionItem = ({
     }).format(date);
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      onSaveTitle(session.id, newTitle);
+    } else if (e.key === 'Escape') {
+      onCancelEdit();
+    }
+  };
+
+  // Auto-focus the input when editing starts
+  useEffect(() => {
+    if (editingId === session.id) {
+      const inputElement = document.querySelector(`#session-title-${session.id}`);
+      if (inputElement) {
+        inputElement.focus();
+        // Select all text in the input
+        inputElement.select();
+      }
+    }
+  }, [editingId, session.id]);
+
   return (
     <li className={`session-item ${isActive ? "active" : ""} ${session.is_archived ? "archived" : ""}`}
-        onClick={() => onSelect(session.id)}>
+        onClick={() => !editingId && onSelect(session.id)}>
       <div className="session-header">
         {editingId === session.id ? (
           <div className="edit-input-container">
             <input
+              id={`session-title-${session.id}`}
               type="text"
               className="session-edit-input"
               value={newTitle}
               onChange={(e) => onTitleChange(e.target.value)}
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && newTitle.trim()) onSaveTitle(session.id, newTitle);
-                if (e.key === 'Escape') onCancelEdit();
-              }}
+              onKeyDown={handleKeyDown}
+              onBlur={() => onSaveTitle(session.id, newTitle)}
               onClick={(e) => e.stopPropagation()}
             />
             <div className="edit-actions">
@@ -75,15 +96,31 @@ const SessionItem = ({
               }} title="Edit chat name">
                 <EditIcon />
               </button>
-              <button className={`${session.is_archived ? 'unarchive' : 'archive'}-button`}
-                      onClick={(e) => onArchive(e, session.id)}
-                      title={`${session.is_archived ? 'Unarchive' : 'Archive'} chat`}>
-                {session.is_archived ? <UnarchiveIcon /> : <ArchiveIcon />}
+              <button 
+                className="action-button archive-button"
+                onClick={(e) => onArchive(e, session.id)}
+                disabled={isArchiving}
+                title={session.is_archived ? "Unarchive chat" : "Archive chat"}
+              >
+                {isArchiving ? (
+                  <div className="button-spinner"></div>
+                ) : session.is_archived ? (
+                  <UnarchiveIcon />
+                ) : (
+                  <ArchiveIcon />
+                )}
               </button>
-              <button className="delete-button"
-                      onClick={(e) => onDelete(e, session.id)}
-                      title="Delete chat">
-                <DeleteIcon />
+              <button 
+                className="action-button delete-button"
+                onClick={(e) => onDelete(e, session.id)}
+                disabled={isDeleting}
+                title="Delete chat"
+              >
+                {isDeleting ? (
+                  <div className="button-spinner"></div>
+                ) : (
+                  <DeleteIcon />
+                )}
               </button>
             </div>
           </>
@@ -92,7 +129,6 @@ const SessionItem = ({
       <div className="session-preview">
         {session.messages?.length > 0 ? (
           <>
-            <span className="preview-text">{session.preview || "Empty conversation"}</span>
             <span className="timestamp">{getTimeDisplay(session.timestamp)}</span>
           </>
         ) : (

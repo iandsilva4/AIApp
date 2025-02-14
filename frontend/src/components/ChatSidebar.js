@@ -11,6 +11,10 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
   const [error, setError] = useState("");
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [openSection, setOpenSection] = useState('active'); // 'active', 'archived', or null
+  const [loadingStates, setLoadingStates] = useState({
+    archiving: new Set(),
+    deleting: new Set()
+  });
 
   // Fetch existing sessions with retry mechanism
   const fetchSessions = useCallback(async (retryCount = 0) => {
@@ -59,6 +63,12 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
     console.error(message, error);
   };
 
+  const handleEdit = (id, title) => {
+    setEditingSessionId(id);
+    setNewTitle(title);
+    setActiveSession(id);  // Set as active session when editing starts
+  };
+
   const createNewSession = async (title = "Untitled Chat") => {
     try {
       const token = await user.getIdToken();
@@ -67,7 +77,6 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
         try {
           await handleEndSession();
         } catch (err) {
-          // If ending the session fails, log it but continue with creating new session
           console.error("Error ending previous session:", err);
         }
       }
@@ -79,8 +88,10 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
       );
 
       setSessions([response.data, ...sessions]);
-      setActiveSession(response.data.id);
-      setNewTitle("");
+      setActiveSession(response.data.id);  // Already setting active session here
+      setEditingSessionId(response.data.id);
+      setNewTitle(response.data.title);
+      setOpenSection('active');
     } catch (err) {
       handleError("Failed to create a new session.", err);
     }
@@ -108,6 +119,12 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
     if (!window.confirm("Are you sure you want to delete this chat?")) return;
 
     try {
+      // Set loading state
+      setLoadingStates(prev => ({
+        ...prev,
+        deleting: new Set([...prev.deleting, sessionId])
+      }));
+
       const token = await user.getIdToken();
       await axios.delete(
         `${process.env.REACT_APP_BACKEND_URL}/sessions/${sessionId}`,
@@ -118,12 +135,24 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
       if (sessionId === activeSession) setActiveSession(null);
     } catch (err) {
       handleError("Failed to delete session.", err);
+    } finally {
+      // Clear loading state
+      setLoadingStates(prev => ({
+        ...prev,
+        deleting: new Set([...prev.deleting].filter(id => id !== sessionId))
+      }));
     }
   };
 
   const handleArchiveSession = async (e, sessionId) => {
     e.stopPropagation();
     try {
+      // Set loading state
+      setLoadingStates(prev => ({
+        ...prev,
+        archiving: new Set([...prev.archiving, sessionId])
+      }));
+
       const token = await user.getIdToken();
       const response = await axios.put(
         `${process.env.REACT_APP_BACKEND_URL}/sessions/${sessionId}/archive`,
@@ -135,6 +164,12 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
       if (sessionId === activeSession) setActiveSession(null);
     } catch (err) {
       handleError("Failed to archive session.", err);
+    } finally {
+      // Clear loading state
+      setLoadingStates(prev => ({
+        ...prev,
+        archiving: new Set([...prev.archiving].filter(id => id !== sessionId))
+      }));
     }
   };
 
@@ -153,10 +188,7 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
         session={session}
         isActive={session.id === activeSession}
         onSelect={setActiveSession}
-        onEdit={(id, title) => {
-          setEditingSessionId(id);
-          setNewTitle(title);
-        }}
+        onEdit={handleEdit}
         onArchive={handleArchiveSession}
         onDelete={handleDeleteSession}
         editingId={editingSessionId}
@@ -167,6 +199,8 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
           setEditingSessionId(null);
           setNewTitle('');
         }}
+        isArchiving={loadingStates.archiving.has(session.id)}
+        isDeleting={loadingStates.deleting.has(session.id)}
       />
     ));
   };

@@ -20,6 +20,7 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
   const textareaRef = useRef(null); // Add ref for textarea
   const [isLoading, setIsLoading] = useState(false);
   const [isAIResponding, setIsAIResponding] = useState(false);
+  const [isEndingSession, setIsEndingSession] = useState(false);
 
   // Reset textarea height
   const resetTextareaHeight = () => {
@@ -193,16 +194,15 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
     if (!activeSession) return;
     
     try {
+      setIsEndingSession(true);
       const token = await user.getIdToken();
       
-      // First end the session
       const endResponse = await axios.put(
         `${process.env.REACT_APP_BACKEND_URL}/sessions/${activeSession}/end`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      // Update sessions list with ended session
       setSessions(prevSessions => 
         prevSessions.map(session => 
           session.id === activeSession ? endResponse.data : session
@@ -212,6 +212,8 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
     } catch (err) {
       setErrorMessage("Failed to end session");
       console.error("Error ending session:", err);
+    } finally {
+      setIsEndingSession(false);
     }
   };
 
@@ -231,13 +233,18 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
         <div className="header-title">
           <span>Chat with Ian</span>
         </div>
-        {activeSession && (
+        {activeSession && !getCurrentSession()?.is_ended && (
           <button 
             className="icon-button end-session-button"
             onClick={handleEndSession}
+            disabled={isEndingSession}
             title="End session"
           >
-            <EndIcon />
+            {isEndingSession ? (
+              <div className="button-spinner"></div>
+            ) : (
+              <EndIcon />
+            )}
           </button>
         )}
       </div>
