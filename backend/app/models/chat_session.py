@@ -9,6 +9,7 @@ class ChatSession(db.Model):
     title = db.Column(db.String(255), nullable=False, default="Untitled Chat")
     messages = db.Column(db.Text, nullable=False, default="[]")
     summary = db.Column(db.Text, nullable=True)
+    embedding = db.Column(db.Text, nullable=True)
     timestamp = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     is_deleted = db.Column(db.Boolean, nullable=False, default=False)
     is_archived = db.Column(db.Boolean, nullable=False, default=False)
@@ -21,6 +22,7 @@ class ChatSession(db.Model):
             "title": self.title,
             "messages": json.loads(self.messages),
             "summary": self.summary,
+            "embedding": self.embedding,
             "timestamp": self.timestamp.isoformat(),
             "is_deleted": self.is_deleted,
             "is_archived": self.is_archived,
