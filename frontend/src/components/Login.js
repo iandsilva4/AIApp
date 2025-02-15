@@ -4,7 +4,6 @@ import { onAuthStateChanged } from "firebase/auth";
 import "./Login.css";
 import { 
   FaGoogle, 
-  FaRobot, 
   FaBrain, 
   FaUserCheck, 
   FaChartLine 
