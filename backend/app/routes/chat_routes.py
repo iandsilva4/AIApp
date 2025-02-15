@@ -114,7 +114,10 @@ def delete_session(user_email, session_id):
         session.is_ended = True
 
         db.session.commit()
-        
+
+        # Update user summary after session ends
+        update_user_summary(user_email)
+
         return jsonify({'message': 'Session deleted successfully'})
 
     except Exception as e:
