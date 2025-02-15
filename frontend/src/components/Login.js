@@ -41,13 +41,6 @@ const Login = ({ setUser }) => {
         <div className="floating-element element-1"></div>
         <div className="floating-element element-2"></div>
         <div className="floating-element element-3"></div>
-        
-        {/* Horizontal lines */}
-
-        
-        {/* Diagonal lines */}
-        <div className="moving-line line-5"></div>
-        <div className="moving-line line-6"></div>
       </div>
       
       <div className="gradient-spots">
