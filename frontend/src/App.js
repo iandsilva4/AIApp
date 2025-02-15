@@ -15,6 +15,7 @@ const App = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true); // Sidebar starts open
   const [isAuthReady, setIsAuthReady] = useState(false); // Add this state
   const [sessions, setSessions] = useState([]);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
 
   // Listen for authentication state changes
@@ -30,6 +31,16 @@ const App = () => {
     });
 
     return () => unsubscribe();
+  }, []);
+
+  // Add window resize listener
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Show loading while auth is initializing
@@ -52,35 +63,48 @@ const App = () => {
   return (
     <div className="app-container">
       <header className="header">
-        <p>Welcome, {user.displayName} ({user.email})</p>
+        <p>Welcome, {user.displayName?.split(' ')[0]} ({user.email})</p>
         <Logout user={user} setUser={setUser} />
       </header>
 
-      {/* Apply 'sidebar-hidden' class when sidebar is closed */}
-      <div className={"app-content"}>
-        {isSidebarOpen ? (
+      <div className={`app-content ${isMobile && activeSession ? 'show-chat' : ''}`}>
+        {/* Show sidebar if it's open on desktop, or if on mobile and no active session */}
+        {(isSidebarOpen || (isMobile && !activeSession)) && (
           <div className="sidebar-container">
             <ChatSidebar
               user={user}
               activeSession={activeSession}
-              setActiveSession={setActiveSession}
+              setActiveSession={(sessionId) => {
+                setActiveSession(sessionId);
+                if (isMobile) {
+                  setIsSidebarOpen(false);
+                }
+              }}
               setIsSidebarOpen={setIsSidebarOpen}
               sessions={sessions}
               setSessions={setSessions}
             />
           </div>
-        ) : null}
+        )}
 
-        <div className="chat-window-container">
-          <ChatWindow 
-            user={user} 
-            activeSession={activeSession} 
-            isSidebarOpen={isSidebarOpen}
-            setIsSidebarOpen={setIsSidebarOpen}
-            sessions={sessions}
-            setSessions={setSessions}
-          />
-        </div>
+        {/* Show chat window if not on mobile, or if on mobile and has active session */}
+        {(!isMobile || (isMobile && activeSession)) && (
+          <div className="chat-window-container">
+            <ChatWindow 
+              user={user} 
+              activeSession={activeSession} 
+              isSidebarOpen={isSidebarOpen}
+              setIsSidebarOpen={(open) => {
+                setIsSidebarOpen(open);
+                if (isMobile && open) {
+                  setActiveSession(null);
+                }
+              }}
+              sessions={sessions}
+              setSessions={setSessions}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

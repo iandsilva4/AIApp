@@ -40,48 +40,59 @@ const getProvider = () => {
 
 // Authentication functions
 export const signInWithGoogle = async (isMobile = false) => {
-  const provider = getProvider();
-  
-  if (isMobile) {
-    await getRedirectResult(auth);
-    await signInWithRedirect(auth, provider);
-    return null;
+  try {
+    const provider = getProvider();
+    const redirectUrl = getRedirectUrl();
+    console.log('Using redirect URL:', redirectUrl);
+
+    if (isMobile) {
+      console.log('Attempting mobile sign-in with redirect...');
+      await getRedirectResult(auth); // Clear any existing redirect result
+      await signInWithRedirect(auth, provider);
+      return null;
+    } else {
+      console.log('Attempting desktop sign-in with popup...');
+      const result = await signInWithPopup(auth, provider);
+      return result.user;
+    }
+  } catch (error) {
+    console.error("Error during sign in:", error.code, error.message);
+    if (error.code === 'auth/popup-blocked') {
+      throw new Error('Popup was blocked. Please allow popups and try again.');
+    }
+    throw error;
   }
-  
-  const result = await signInWithPopup(auth, provider);
-  return result.user;
 };
 
 export const getGoogleRedirectResult = async () => {
-  const result = await getRedirectResult(auth);
-  if (result) {
-    return result.user;
+  try {
+    console.log('Checking for redirect result...', window.location.href);
+    const result = await getRedirectResult(auth);
+    if (result) {
+      console.log('Got redirect result:', result.user.email);
+      return result.user;
+    } else {
+      console.log('No redirect result found');
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        console.log('Found user in auth state:', currentUser.email);
+        return currentUser;
+      }
+      return null;
+    }
+  } catch (error) {
+    console.error("Error getting redirect result:", error.code, error.message, window.location.href);
+    throw error;
   }
-  return auth.currentUser;
 };
 
 export const logout = async () => {
-  await signOut(auth);
-  localStorage.removeItem('user');
-  localStorage.removeItem('authToken');
-};
-
-// Add this function to help manage tokens
-export const getAuthToken = async () => {
   try {
-    // First try to get current user
-    const currentUser = auth.currentUser;
-    if (currentUser) {
-      // Force token refresh
-      const token = await currentUser.getIdToken(true);
-      localStorage.setItem('authToken', token);
-      return token;
-    }
-    
-    // Fallback to stored token
-    return localStorage.getItem('authToken');
+    await signOut(auth);
+    localStorage.removeItem('user');
+    localStorage.removeItem('authToken');
   } catch (error) {
-    console.error('Error getting auth token:', error);
-    return null;
+    console.error("Error during logout:", error);
+    throw error;
   }
 };
