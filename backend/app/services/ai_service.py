@@ -36,7 +36,7 @@ def generate_ai_response(messages, user_email):
         # Step 1: Get relevant summaries & full conversations
         #session_summaries, full_conversations = get_most_relevant_context(user_email, latest_message)
         session_summaries = get_most_relevant_context(user_email, latest_message)
-
+        user_summary = UserSummary.query.filter_by(user_email=user_email).first()
 
         # Step 2: Set max token budget (adjust based on model)
         MAX_TOKENS = 30000 
@@ -50,9 +50,17 @@ def generate_ai_response(messages, user_email):
         system_messages = [{"role": "system", "content": system_prompt}]
         current_session_messages = []
         past_summaries = []
-        past_full_conversations = []
+        user_summary_messages = []
 
-        # Step 5: Append only the most recent user-assistant exchanges (current session)
+        # Step 5: Add user summary if it exists
+        if user_summary and user_summary.summary:
+            user_summary_content = f"USER SUMMARY:\n{user_summary.summary}\n"
+            user_summary_tokens = count_tokens(user_summary_content)
+            if total_tokens + user_summary_tokens < MAX_TOKENS:
+                user_summary_messages.append({"role": "system", "content": user_summary_content})
+                total_tokens += user_summary_tokens
+
+        # Step 6: Append only the most recent user-assistant exchanges (current session)
         trimmed_messages = messages #messages[-8:]  # Use last 8 messages for better recency
         for msg in trimmed_messages:
             message_tokens = count_tokens(msg["content"])
@@ -62,7 +70,7 @@ def generate_ai_response(messages, user_email):
             else:
                 break  # Stop adding messages if we hit the limit
 
-        # Step 6: Add past session summaries (if space allows)
+        # Step 7: Add past session summaries (if space allows)
         if session_summaries and total_tokens < MAX_TOKENS:
             past_summaries_content = "PAST SUMMARIES:\n"
             added_summaries = []
@@ -99,24 +107,27 @@ def generate_ai_response(messages, user_email):
                 total_tokens += full_convo_tokens
         '''
 
-        # Step 8: Assemble messages in correct order (system → past context → current session)
-        #messages_list = system_messages + past_summaries + past_full_conversations + current_session_messages 
-        messages_list = system_messages + past_summaries + current_session_messages # take out full past conversations
+        # Step 8: Assemble messages in correct order (system → user summary → past summaries → current session)
+        messages_list = system_messages + user_summary_messages + past_summaries + current_session_messages
+        
         if not current_session_messages:
             messages_list.append({
                 "role": "system", 
                 "content": "This is a new session. Say hello!"
             })
 
-        print(messages_list)
-
         # Step 8: Generate AI response
         openai_response = client.chat.completions.create(
             model=model,
             messages=messages_list,
-            max_tokens=responseMaxTokens,  # Response size limit\
-            temperature=1.2
+            max_completion_tokens=responseMaxTokens,  # Maximum number of tokens in response (1-16k)
+            #temperature=1.2,              # Controls randomness/creativity (0.0-2.0, higher = more random)
+            #top_p=1,                   # Nucleus sampling, controls diversity (0.0-1.0, lower = more focused)
+            #frequency_penalty=0,        # Reduces word repetition (-2.0 to 2.0, higher = less repetition)
+            #presence_penalty=0.8          # Encourages new topics (-2.0 to 2.0, higher = more topic changes)
         )
+
+        logger.info(f"OpenAI API Usage Stats: {openai_response.usage}")
 
         return openai_response.choices[0].message.content
 
@@ -164,7 +175,7 @@ def getSystemPrompt():
     )
 
 
-    prompt = (
+    base_system_prompt += (
         # **Session Continuity & Accountability**  
         "You should recall key insights from previous sessions to maintain an evolving conversation. "
         "If the user committed to an action, follow up proactively:\n"
@@ -238,8 +249,9 @@ def getSystemPrompt():
 
     base_system_prompt += (
         "The provided context is structured as follows:\n"
-        "- PAST SUMMARIES: Summaries of previous sessions.\n"
-        "- FULL CONVERSATIONS: Full logs from previous relevant conversations.\n"
+        "- USER SUMMARY: A summary of the user's long-term history of all sessions.\n"
+        "- PAST SUMMARIES: Summaries of previous individual sessions.\n"
+        #"- FULL CONVERSATIONS: Full logs from previous relevant conversations.\n"
         "- CURRENT MESSAGES: The ongoing discussion."
         "In CURRENT MESSAGES, you (the system) are the Assistant and you are responding to the User."
     )
@@ -329,7 +341,7 @@ def generateSessionSummary(messages):
         summary_response = client.chat.completions.create(
             model=model,
             messages=formatted_messages,
-            max_tokens=sessionSummaryMaxTokens
+            max_completion_tokens=sessionSummaryMaxTokens
         )
 
         return summary_response.choices[0].message.content.strip()
@@ -365,7 +377,7 @@ def generateUserSummary(session_summaries):
         summary_response = client.chat.completions.create(
             model=model,
             messages=formatted_messages,
-            max_tokens=userSummaryMaxTokens
+            max_completion_tokens=userSummaryMaxTokens
         )
 
         return summary_response.choices[0].message.content
