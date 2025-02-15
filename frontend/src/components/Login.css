@@ -1,191 +1,588 @@
-/* Full-screen background */
-.login-page {
+/* Reset styles remain the same */
+
+/* Landing page container */
+.landing-page {
+  min-height: 100vh;
+  background: linear-gradient(125deg, #000F2E, #1B0034, #000F2E);
+  background-size: 200% 200%;
+  animation: gradientMove 15s ease infinite;
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  background: linear-gradient(135deg, #f3f4f6, #e0e5ec);
+  padding: 2rem;
+  box-sizing: border-box;
+  overflow-y: auto;
+  position: relative;
+  perspective: 1000px;
+  perspective-origin: center;
+  overflow-x: hidden;
+  width: 100vw;
 }
 
-/* Login Box */
-.login-card {
-  background: rgba(255, 255, 255, 1);
-  backdrop-filter: blur(10px);
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  max-width: 400px;
+/* Add animated background elements */
+.landing-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 30%, rgba(41, 196, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(255, 41, 230, 0.08) 0%, transparent 50%);
+  pointer-events: none;
+  animation: gradientShift 15s infinite;
+}
+
+/* Grid Background */
+.grid-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(rgba(41, 196, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(41, 196, 255, 0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  opacity: 0.3;
+  transform-origin: center;
+  animation: gridMove 20s infinite linear;
+  width: 100vw;
+  left: 0;
+  overflow: hidden;
+}
+
+.grid-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(rgba(255, 41, 230, 0.03) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(255, 41, 230, 0.03) 2px, transparent 2px);
+  background-size: 100px 100px;
+  pointer-events: none;
+  opacity: 0.2;
+  transform-origin: center;
+  animation: gridMove 15s infinite linear reverse;
+  width: 100vw;
+  left: 0;
+  overflow: hidden;
+}
+
+/* Grid distortion effect for gradient spots */
+.grid-distortion {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  backdrop-filter: blur(30px);
+  pointer-events: none;
+  opacity: 0.1;
+  animation: distortionPulse 8s infinite ease-in-out;
+  width: 100vw;
+  left: 0;
+  overflow: hidden;
+}
+
+/* Floating Elements */
+.floating-elements {
+  position: absolute;
   width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+  transform-style: preserve-3d;
+  width: 100vw;
+  left: 0;
 }
 
-/* Welcome Message */
-.welcome-text {
-  font-size: 20px;
-  font-weight: bold;
-  color: #333;
+.floating-element {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.05;
+  filter: blur(80px);
+  animation: float 25s infinite ease-in-out;
+}
+
+.element-1 {
+  width: 600px;
+  height: 600px;
+  background: #29C4FF;
+  top: 5%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.element-2 {
+  width: 800px;
+  height: 800px;
+  background: #FF29E6;
+  bottom: 15%;
+  right: 10%;
+  animation-delay: -5s;
+}
+
+.element-3 {
+  width: 500px;
+  height: 500px;
+  background: #4CA9FF;
+  top: 40%;
+  left: 40%;
+  animation-delay: -10s;
+}
+
+/* Moving Lines */
+.moving-line {
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  animation: moveLine 8s infinite linear;
+  opacity: 0;
+  backdrop-filter: blur(5px);
+  z-index: 3;
+}
+
+/* Horizontal lines */
+.line-1 {
+  top: 15%;
+  background: linear-gradient(90deg, transparent, rgba(41, 196, 255, 0.2), transparent);
+  animation: moveLineRight 12s infinite ease-in-out;
+}
+
+.line-2 {
+  top: 35%;
+  background: linear-gradient(270deg, transparent, rgba(255, 41, 230, 0.15), transparent);
+  animation: moveLineLeft 8s infinite ease-in-out;
+}
+
+.line-3 {
+  top: 55%;
+  background: linear-gradient(90deg, transparent, rgba(98, 114, 255, 0.18), transparent);
+  animation: moveLineRight 15s infinite ease-in-out;
+}
+
+.line-4 {
+  top: 75%;
+  background: linear-gradient(270deg, transparent, rgba(41, 196, 255, 0.12), transparent);
+  animation: moveLineLeft 10s infinite ease-in-out;
+}
+
+/* Diagonal lines */
+.line-5 {
+  top: 25%;
+  background: linear-gradient(45deg, transparent, rgba(255, 41, 230, 0.15), transparent);
+  transform: rotate(45deg);
+  transform-origin: left;
+  animation: moveDiagonalRight 20s infinite ease-in-out;
+}
+
+.line-6 {
+  top: 65%;
+  background: linear-gradient(135deg, transparent, rgba(98, 114, 255, 0.12), transparent);
+  transform: rotate(-45deg);
+  transform-origin: right;
+  animation: moveDiagonalLeft 17s infinite ease-in-out;
+}
+
+/* Vertical lines */
+.line-7 {
+  height: 100%;
+  width: 1px;
+  left: 30%;
+  background: linear-gradient(180deg, transparent, rgba(41, 196, 255, 0.1), transparent);
+  animation: moveVertical 14s infinite ease-in-out;
+}
+
+.line-8 {
+  height: 100%;
+  width: 1px;
+  right: 30%;
+  background: linear-gradient(180deg, transparent, rgba(255, 41, 230, 0.1), transparent);
+  animation: moveVertical 11s infinite ease-in-out reverse;
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  20% {
+    transform: translate(5vw, 5%) rotate(10deg) scale(1.1);
+  }
+  40% {
+    transform: translate(-5vw, 15%) rotate(-5deg) scale(0.9);
+  }
+  60% {
+    transform: translate(-5vw, -10%) rotate(-15deg) scale(1.2);
+  }
+  80% {
+    transform: translate(5vw, -5%) rotate(5deg) scale(0.95);
+  }
+}
+
+@keyframes moveLineRight {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes moveLineLeft {
+  0% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+}
+
+@keyframes moveDiagonalRight {
+  0% {
+    transform: rotate(45deg) translateX(-50vw) translateY(-100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: rotate(45deg) translateX(50vw) translateY(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes moveDiagonalLeft {
+  0% {
+    transform: rotate(-45deg) translateX(50vw) translateY(-100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: rotate(-45deg) translateX(-50vw) translateY(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes moveVertical {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.landing-content {
+  max-width: 1200px;
+  width: 100%;
+  text-align: center;
+  padding-bottom: 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* Hero Section */
+.hero-section {
+  margin-bottom: 4rem;
+  padding: 3rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.hero-section h1 {
+  font-size: 3.5rem;
+  background: linear-gradient(to right, #29C4FF, #FF29E6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.hero-subtitle {
+  font-size: 1.25rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 2.5rem;
+  line-height: 1.6;
 }
 
 /* Google Login Button */
 .google-login-button {
-  background-color: rgb(230, 247, 253);
-  color: #333;
-  border: 1px solid #ddd;
-  padding: 12px;
-  border-radius: 5px;
-  border-color: transparent;
-  font-size: 16px;
+  background: linear-gradient(135deg, #29C4FF, #FF29E6);
+  color: white;
+  border: none;
+  padding: 1.2rem 2.5rem;
+  border-radius: 12px;
+  font-size: 1.1rem;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  transition: 0.3s;
-  width: 100%;
+  gap: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(41, 196, 255, 0.3);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .google-login-button:hover {
-  background-color: #f3f3f3;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(41, 196, 255, 0.5);
 }
 
-/* Google Icon */
+/* Features Section */
+.features-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2.5rem;
+  margin-top: 2rem;
+}
+
+.feature-card {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 2.5rem;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.feature-icon {
+  font-size: 2.5rem;
+  color: #29C4FF;
+  margin-bottom: 1.5rem;
+  filter: drop-shadow(0 0 8px rgba(41, 196, 255, 0.5));
+}
+
+.feature-card h3 {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.feature-card p {
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.7;
+  font-size: 1.1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .landing-page {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 1rem;
+    align-items: flex-start;
+    overflow-y: scroll;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .hero-section {
+    padding: 2rem;
+    margin-top: 1rem;
+  }
+
+  .hero-section h1 {
+    font-size: 2.5rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1.1rem;
+  }
+
+  .features-section {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .feature-card {
+    padding: 2rem;
+  }
+}
+
 .google-icon {
-  color: #4285f4;
+  font-size: 1.2rem;
+  color: white;
 }
 
-/* Divider */
-.divider {
-  text-align: center;
-  margin: 15px 0;
-  position: relative;
-  color: #777;
-}
-
-.divider span {
-  background: white;
-  padding: 0 10px;
-}
-
-.divider:before {
-  content: "";
+/* Add these gradient spots */
+.gradient-spots {
   position: absolute;
-  top: 50%;
+  top: 0;
   left: 0;
-  width: 100%;
-  height: 1px;
-  background: #ddd;
-  z-index: -1;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  width: 100vw;
+  left: 0;
+  overflow: hidden;
 }
 
-/* Input Fields */
-.input-container {
-  position: relative;
-  margin-bottom: 15px;
-}
-
-.input-field {
-  width: 100%;
-  padding: 12px;
-  border-radius: 5px;
-  border: 1px solid #ddd;
-  font-size: 14px;
-  outline: none;
-}
-
-.input-field:focus {
-  border-color: #007bff;
-}
-
-/* Password Toggle */
-.password-toggle {
+.gradient-spot {
   position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  cursor: pointer;
-  color: #777;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0;
+  mix-blend-mode: hard-light;
+  z-index: 2;
 }
 
-/* Forgot Password */
-.forgot-password {
-  text-align: right;
-  margin-bottom: 10px;
+.spot-1 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(41, 196, 255, 0.15), transparent);
+  animation: spotMove1 20s infinite;
 }
 
-.forgot-password a {
-  font-size: 12px;
-  color: #007bff;
-  text-decoration: none;
+.spot-2 {
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(255, 41, 230, 0.12), transparent);
+  animation: spotMove2 25s infinite;
 }
 
-.forgot-password a:hover {
-  text-decoration: underline;
+.spot-3 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(98, 114, 255, 0.15), transparent);
+  animation: spotMove3 18s infinite;
 }
 
-/* Login Button */
-.login-button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 12px;
-  border-radius: 5px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: 0.3s;
-  width: 100%;
-}
-
-.login-button:hover {
-  background-color: #0056b3;
-}
-
-/* Logout Button */
-.logout-button {
-  background-color: #ff5252;
-  color: white;
-  border: none;
-  padding: 12px;
-  border-radius: 5px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: 0.3s;
-  width: 100%;
-}
-
-.logout-button:hover {
-  background-color: #d32f2f;
-}
-
-/* Signup Link */
-.signup-text {
-  margin-top: 15px;
-  font-size: 14px;
-}
-
-.signup-text a {
-  color: #007bff;
-  text-decoration: none;
-}
-
-.signup-text a:hover {
-  text-decoration: underline;
-}
-
-/* Make it responsive */
-@media (max-width: 400px) {
-  .login-card {
-    width: 90%;
+@keyframes spotMove1 {
+  0% {
+    transform: translate(5vw, 10%) scale(0.8);
+    opacity: 0;
+  }
+  25% {
+    transform: translate(15vw, 30%) scale(1.2);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translate(25vw, 20%) scale(1);
+    opacity: 0.4;
+  }
+  75% {
+    transform: translate(35vw, 40%) scale(1.4);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(5vw, 10%) scale(0.8);
+    opacity: 0;
   }
 }
 
-@media (max-width: 600px) {
-  .login-card {
-    width: 90%;
+@keyframes spotMove2 {
+  0% {
+    transform: translate(80%, 80%) scale(1);
+    opacity: 0;
   }
+  33% {
+    transform: translate(60%, 40%) scale(1.5);
+    opacity: 0.5;
+  }
+  66% {
+    transform: translate(40%, 60%) scale(0.8);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(80%, 80%) scale(1);
+    opacity: 0;
+  }
+}
 
-  .google-login-button {
-    font-size: 14px;
-    padding: 10px;
+@keyframes spotMove3 {
+  0% {
+    transform: translate(50%, 50%) scale(1);
+    opacity: 0;
+  }
+  40% {
+    transform: translate(20%, 80%) scale(1.3);
+    opacity: 0.6;
+  }
+  80% {
+    transform: translate(70%, 20%) scale(0.9);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translate(50%, 50%) scale(1);
+    opacity: 0;
+  }
+}
+
+@keyframes gradientShift {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    filter: hue-rotate(180deg);
+  }
+  100% {
+    filter: hue-rotate(360deg);
+  }
+}
+
+@keyframes gridMove {
+  0% {
+    transform: perspective(1000px) rotateX(60deg) translateY(0) scale(2.5);
+  }
+  50% {
+    transform: perspective(1000px) rotateX(60deg) translateY(25px) scale(2.5);
+  }
+  100% {
+    transform: perspective(1000px) rotateX(60deg) translateY(0) scale(2.5);
+  }
+}
+
+@keyframes distortionPulse {
+  0%, 100% {
+    backdrop-filter: blur(30px) contrast(1);
+  }
+  50% {
+    backdrop-filter: blur(50px) contrast(1.2);
   }
 }
