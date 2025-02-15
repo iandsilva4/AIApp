@@ -62,6 +62,12 @@ const App = () => {
 
   return (
     <div className="app-container">
+      <div className="gradient-spots">
+        <div className="gradient-spot spot-1"></div>
+        <div className="gradient-spot spot-2"></div>
+        <div className="gradient-spot spot-3"></div>
+      </div>
+
       <header className="header">
         <p>Welcome, {user.displayName?.split(' ')[0]} ({user.email})</p>
         <Logout user={user} setUser={setUser} />

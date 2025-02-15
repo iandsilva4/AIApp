@@ -20,11 +20,77 @@ body, html {
 .app-container {
   display: flex;
   flex-direction: column;
-  height: 100vh; /* Full height of the viewport */
-  background-color: #f4f4f4; /* Light, subtle background */
-  padding: 20px; /* No extra space around the app */
+  height: 100vh;
+  padding: 20px;
   gap: 10px;
   box-sizing: border-box;
+  background: linear-gradient(125deg, #f0f4ff, #eef1ff, #f5f0ff);
+  background-size: 200% 200%;
+  animation: gradientMove 15s ease infinite;
+  position: relative;
+}
+
+/* Add the grid background */
+.app-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(rgba(41, 196, 255, 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(41, 196, 255, 0.15) 1px, transparent 1px);
+  background-size: 30px 30px;
+  pointer-events: none;
+  opacity: 0.3;
+  transform-origin: center;
+  animation: gridMove 20s infinite linear;
+  z-index: 0;
+}
+
+/* Add the grid overlay */
+.app-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(rgba(255, 41, 230, 0.12) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(255, 41, 230, 0.12) 2px, transparent 2px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  opacity: 0.25;
+  transform-origin: center;
+  animation: gridMove 15s infinite linear reverse;
+  z-index: 0;
+}
+
+/* Add the animations if they don't exist */
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes gridMove {
+  0% {
+    transform: perspective(1000px) rotateX(60deg) translateY(0) scale(3);
+  }
+  50% {
+    transform: perspective(1000px) rotateX(60deg) translateY(25px) scale(3);
+  }
+  100% {
+    transform: perspective(1000px) rotateX(60deg) translateY(0) scale(3);
+  }
+}
+
+/* Ensure all content stays above the background */
+.header, .app-content {
+  position: relative;
+  z-index: 1;
 }
 
 /* Header with floating style */
@@ -36,9 +102,10 @@ body, html {
   padding: 15px 25px;
   padding-left: 20px;
   padding-right: 15px; /* Adjust right padding to match sidebar */
-  background-color: #ffffff; /* White background */
-  border-radius: 10px; /* Rounded corners */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.03);
   margin-bottom: 5px;
   z-index: 10; /* Keep it above other elements */
   flex-shrink: 0; /* Prevent header from shrinking */
@@ -64,26 +131,34 @@ body, html {
 /* Sidebar container */
 .sidebar-container {
   width: clamp(250px, 25%, 400px); /* Increase size dynamically */
-  background-color: #ffffff;
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.03);
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); /* Subtle shadow */
   height: 100%; /* Match parent container height */
   overflow-x: hidden; /* Prevent horizontal scrolling */
   overflow-y: hidden; /* Enable scrolling */
   box-sizing: border-box; /* Include padding/borders in size */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); /* Subtle shadow */
-
 }
+
 
 /* Chat window container */
 .chat-window-container {
   flex: 1;
   height: 100%;
   overflow-y: auto;
-  background-color: #ffffff;
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.03);
   border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); /* Subtle shadow */
   box-sizing: border-box;
+}
+
+.header,
+.sidebar-container,
+.chat-window-container {
+  background-color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(5px);
 }
 
 /* Single mobile/small screen media query */
