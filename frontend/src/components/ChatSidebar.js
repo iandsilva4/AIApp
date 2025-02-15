@@ -13,7 +13,8 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
   const [openSection, setOpenSection] = useState('active'); // 'active', 'archived', or null
   const [loadingStates, setLoadingStates] = useState({
     archiving: new Set(),
-    deleting: new Set()
+    deleting: new Set(),
+    creating: false
   });
 
   // Fetch existing sessions with retry mechanism
@@ -69,8 +70,9 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
     setActiveSession(id);  // Set as active session when editing starts
   };
 
-  const createNewSession = async (title = "Untitled Chat") => {
+  const createNewSession = async (title = "New Chat") => {
     try {
+      setLoadingStates(prev => ({ ...prev, creating: true }));
       const token = await user.getIdToken();
       
       if (activeSession) {
@@ -94,6 +96,8 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
       setOpenSection('active');
     } catch (err) {
       handleError("Failed to create a new session.", err);
+    } finally {
+      setLoadingStates(prev => ({ ...prev, creating: false }));
     }
   };
 
@@ -210,11 +214,20 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
       <div className="chat-sidebar-header">
         <div className="header-title">Chats</div>
         <div className="header-button-section">
-          <button className="icon-button" onClick={() => setIsSidebarOpen(false)}>
+          <button className="icon-button" title="Hide sidebar" onClick={() => setIsSidebarOpen(false)}>
             <SidebarToggleIcon />
           </button>
-          <button className="icon-button" onClick={() => createNewSession()} title="New chat">
-            <NewChatIcon />
+          <button 
+            className="icon-button" 
+            onClick={() => createNewSession()} 
+            title="New chat"
+            disabled={loadingStates.creating}
+          >
+            {loadingStates.creating ? (
+              <div className="button-spinner"></div>
+            ) : (
+              <NewChatIcon />
+            )}
           </button>
         </div>
       </div>
