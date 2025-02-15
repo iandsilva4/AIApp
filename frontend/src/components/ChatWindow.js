@@ -226,7 +226,7 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
     <div className="chat-window">
       <div className="chat-header">
         {!isSidebarOpen && (
-          <button className="icon-button" onClick={() => setIsSidebarOpen(true)}>
+          <button className="icon-button" title="Show sidebar" onClick={() => setIsSidebarOpen(true)}>
             <SidebarToggleIcon />
           </button>
         )}
@@ -258,7 +258,16 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
       <div className="messages" ref={messagesEndRef}>
         {!activeSession ? (
           <div className="welcome-message">
-            <p>Welcome! Select a chat or create a new one to get started.</p>
+            <h2>Welcome to your AI Assistant! 👋</h2>
+            <div className="welcome-steps">
+              <p>Get started in 3 simple steps:</p>
+              <ol>
+                <li>Click the <b>+</b> button to start a new chat</li>
+                <li>Ask any question or describe what you need help with</li>
+                <li>Get instant, helpful responses from your AI assistant</li>
+              </ol>
+              <p className="welcome-hint">Feel free to share your thoughts, feelings, or experiences. I'm here to listen, reflect, and support your journey.</p>
+            </div>
           </div>
         ) : isLoading ? (
           <div className="loading-container">

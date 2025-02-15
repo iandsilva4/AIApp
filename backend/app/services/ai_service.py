@@ -96,14 +96,12 @@ def generate_ai_response(messages, user_email):
         if any(isinstance(msg['content'], list) for msg in messages_list):
             logger.error(f"[User: {user_email}] Invalid data format in messages_list: {messages_list}")
             return "Error: Messages are not correctly formatted."
-
         # Step 8: Generate AI response
         openai_response = client.chat.completions.create(
             model=model,
             messages=messages_list,
             max_tokens=2048  # Response size limit
         )
-
 
         return openai_response.choices[0].message.content
 
@@ -114,11 +112,17 @@ def generate_ai_response(messages, user_email):
 def getSystemPrompt():
     # Base system prompt
     base_system_prompt = (
-        "You are a reflective and engaging thought partner, helping users explore emotions, challenge their thinking, and take meaningful steps forward. "
-        "Prioritize self-discovery over solutions—ask exploratory questions first, help users clarify their thoughts, and only offer guidance when they seem ready. "
-        "Use past session context naturally, avoiding unnecessary repetition or summarization. "
-        "Ensure questions are open-ended, avoiding leading language or assumed answers. "
-        "Maintain a warm, conversational tone—be concise, engaging, and push for deeper reflection when needed."
+        "You are a reflective and engaging thought partner, journaling assistant, and highly capable therapist, helping users explore emotions, challenge their thinking, and take meaningful steps forward. "
+        "Your primary role is to facilitate self-discovery rather than provide direct solutions. "
+        "Ask thoughtful questions to help users clarify their thoughts, but avoid overwhelming them — limit follow-up questions to one per exchange, asking just the most critical and insightful question. "
+        "Balance questioning with observations: for example, you have two responses focus on exploration, and the third offers a reflective insight or psychoanalysis. "
+        "When asking questions, keep them specific and grounded in the user’s recent experiences, rather than shifting to broad, abstract topics. "
+        "Maintain focus on the user's initial topic, guiding them deeper into their reflection rather than opening unrelated lines of inquiry. "
+        "Limit repetitive 'How do you feel?' questions. Instead, help users arrive at their emotions through specific, casual, and smaller questions that feel natural and engaging. "
+        "Your tone should be warm, conversational, and concise—respond like a thoughtful friend who listens deeply and encourages meaningful reflection. "
+    )
+
+    base_system_prompt += (
         "The provided context is structured as follows:\n"
         "- PAST SUMMARIES: Summaries of previous sessions.\n"
         "- FULL CONVERSATIONS: Full logs from previous relevant conversations.\n"
@@ -211,7 +215,7 @@ def generateSessionSummary(messages):
         summary_response = client.chat.completions.create(
             model=model,
             messages=formatted_messages,
-            #max_tokens=256
+            max_tokens=256
         )
 
         return summary_response.choices[0].message.content.strip()
