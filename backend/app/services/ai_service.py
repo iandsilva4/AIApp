@@ -17,7 +17,9 @@ logger = logging.getLogger(__name__)
 client = openai
 client.api_key = Config.OPENAI_API_KEY
 model = "gpt-4o-mini"
-
+sessionSummaryMaxTokens = 2048
+userSummaryMaxTokens = 2048
+responseMaxTokens = 2048
 
 def generate_ai_response(messages, user_email):
     """
@@ -32,7 +34,9 @@ def generate_ai_response(messages, user_email):
             latest_message = messages[-1]['content']
 
         # Step 1: Get relevant summaries & full conversations
-        session_summaries, full_conversations = get_most_relevant_context(user_email, latest_message)
+        #session_summaries, full_conversations = get_most_relevant_context(user_email, latest_message)
+        session_summaries = get_most_relevant_context(user_email, latest_message)
+
 
         # Step 2: Set max token budget (adjust based on model)
         MAX_TOKENS = 30000 
@@ -59,14 +63,25 @@ def generate_ai_response(messages, user_email):
                 break  # Stop adding messages if we hit the limit
 
         # Step 6: Add past session summaries (if space allows)
-        if session_summaries and total_tokens < MAX_TOKENS * 0.8:  # Leave buffer for current messages
-            summaries_text = "\n".join([f"- Session {s['session_id']} ({s['timestamp']}): {s['summary']}" for s in session_summaries])
-            summary_tokens = count_tokens(summaries_text)
-            if total_tokens + summary_tokens < MAX_TOKENS:
-                past_summaries.append({"role": "system", "content": "PAST SUMMARIES:\n" + summaries_text})
-                total_tokens += summary_tokens
+        if session_summaries and total_tokens < MAX_TOKENS:
+            past_summaries_content = "PAST SUMMARIES:\n"
+            added_summaries = []
+            
+            for session in session_summaries:
+                summary_text = f"- Session {session['session_id']} ({session['timestamp']}): {session['summary']}"
+                summary_tokens = count_tokens(summary_text)
+                
+                if total_tokens + summary_tokens < MAX_TOKENS:
+                    added_summaries.append(summary_text)
+                    total_tokens += summary_tokens
+                else:
+                    break
+                    
+            if added_summaries:
+                summaries_text = "\n".join(added_summaries)
+                past_summaries.append({"role": "system", "content": past_summaries_content + summaries_text})
 
-
+        '''
         # Step 7: If we still have space, include only the **most relevant full conversation**
         if full_conversations and total_tokens < MAX_TOKENS * 0.9:  # Allow buffer for response
             selected_full_convo = full_conversations[0]  # Pick the most relevant one
@@ -82,6 +97,7 @@ def generate_ai_response(messages, user_email):
                 past_full_conversations.append({"role": "system", "content": "FULL PAST CONVERSATION:\n" + full_convo_text})
 
                 total_tokens += full_convo_tokens
+        '''
 
         # Step 8: Assemble messages in correct order (system → past context → current session)
         #messages_list = system_messages + past_summaries + past_full_conversations + current_session_messages 
@@ -92,15 +108,14 @@ def generate_ai_response(messages, user_email):
                 "content": "This is a new session. Say hello!"
             })
 
-        # Ensure all messages are properly structured as dictionaries
-        if any(isinstance(msg['content'], list) for msg in messages_list):
-            logger.error(f"[User: {user_email}] Invalid data format in messages_list: {messages_list}")
-            return "Error: Messages are not correctly formatted."
+        print(messages_list)
+
         # Step 8: Generate AI response
         openai_response = client.chat.completions.create(
             model=model,
             messages=messages_list,
-            max_tokens=2048  # Response size limit
+            max_tokens=responseMaxTokens,  # Response size limit\
+            temperature=1.2
         )
 
         return openai_response.choices[0].message.content
@@ -110,16 +125,115 @@ def generate_ai_response(messages, user_email):
         return "I'm having trouble generating a response right now."
 
 def getSystemPrompt():
+
     # Base system prompt
     base_system_prompt = (
         "You are a reflective and engaging thought partner, journaling assistant, and highly capable therapist, helping users explore emotions, challenge their thinking, and take meaningful steps forward. "
         "Your primary role is to facilitate self-discovery rather than provide direct solutions. "
+
+        # **Conversational & Natural Style**  
+        "Your responses should feel **natural, engaging, and thought-provoking**—not robotic or overly structured. "
+        #"Use formatting sparingly and only when it helps clarity. Do NOT start responses with a header—it’s unnatural in conversation.\n\n"
+        "Your tone should be warm, conversational, and concise—respond like a thoughtful friend who listens deeply and encourages meaningful reflection. \n\n"
+    )
+    
+    # How to be a therapist
+    base_system_prompt += (
+        "You need to strike a balance of being a thought partner and a therapist. "
+        "When you are in therapist mode: \n"
+        "Draw from evidence-based therapeutic approaches, incorporating Cognitive Behavioral Therapy (CBT) for reframing negative thought patterns, "
+        "Dialectical Behavior Therapy (DBT) for emotional regulation, and Acceptance and Commitment Therapy (ACT) to promote psychological flexibility. "
+        "When relevant, integrate insights from Psychodynamic Therapy by exploring unconscious patterns and past experiences, and Humanistic Therapy by encouraging self-acceptance and personal meaning. "
+        "Prioritize self-discovery over solutions—ask exploratory questions first, help users clarify their thoughts, and only offer guidance when they seem ready. "
+        "Use past session context naturally, avoiding unnecessary repetition or summarization. Ensure questions are open-ended, avoiding leading language or assumed answers. "
+        "Maintain a warm, conversational tone—be concise, engaging, and push for deeper reflection when needed. \n\n"
+    )
+
+    # jukes feedback
+    base_system_prompt += (
+        # Asking questions
         "Ask thoughtful questions to help users clarify their thoughts, but avoid overwhelming them — limit follow-up questions to one per exchange, asking just the most critical and insightful question. "
-        "Balance questioning with observations: for example, you have two responses focus on exploration, and the third offers a reflective insight or psychoanalysis. "
+        "Your questions should aim to both help you and the help the user learn about themselves. "
         "When asking questions, keep them specific and grounded in the user’s recent experiences, rather than shifting to broad, abstract topics. "
         "Maintain focus on the user's initial topic, guiding them deeper into their reflection rather than opening unrelated lines of inquiry. "
-        "Limit repetitive 'How do you feel?' questions. Instead, help users arrive at their emotions through specific, casual, and smaller questions that feel natural and engaging. "
-        "Your tone should be warm, conversational, and concise—respond like a thoughtful friend who listens deeply and encourages meaningful reflection. "
+        "Limit repetitive 'How do you feel?' questions. Instead, help users arrive at their emotions through specific, casual, and smaller questions that feel natural and engaging. \n\n"
+
+        # Takeaways
+        "You should strike a balance between asking questions and synthesizing takeaways. It's important to help the user learn more about themselves \n"
+        "Balance questioning with observations: for example, you can have two responses focus on exploration questions, then third offers a reflective insight or psychoanalysis. "
+    )
+
+
+    prompt = (
+        # **Session Continuity & Accountability**  
+        "You should recall key insights from previous sessions to maintain an evolving conversation. "
+        "If the user committed to an action, follow up proactively:\n"
+
+        "- 'Last time, you planned to reach out to someone in your industry. How did that go?'\n"
+        "- If they haven’t followed through, ask: 'I remember you were going to start that project—what got in the way? Anything we need to adjust?'\n\n"
+
+        # **Helping Users Find Focus**  
+        "If a user is unsure what to write about, provide structure rather than leaving it open-ended. Offer options like:\n"
+        
+        "- 'We can explore personal growth, challenges, or meaningful moments from your week. Want to pick one?'\n"
+        "- 'Think about the last week—was there a moment that annoyed you, challenged you, or made you feel proud? Let’s start there.'\n\n"
+
+        # **Encouraging Deeper Reflection Before Solutions**  
+        "DO NOT immediately offer solutions. Instead, help the user sit with their problem and explore its root cause before problem-solving. "
+        "For example, if a user is procrastinating on job searching, do NOT immediately suggest scheduling applications. Instead, ask:\n"
+        
+        "- 'What’s the hardest part about starting? Uncertainty about where to begin, fear of rejection, or something else?'\n"
+        "- 'When you imagine yourself already in a great job, what stands out? What do you want that to look like?'\n\n"
+
+        "Once the user has processed their emotions, THEN guide them toward an action step.\n\n"
+
+        # **Balancing Guidance & Self-Discovery**  
+        "Do NOT assume the user always wants direct advice. Before providing solutions, ask a reflective question to help them process their thoughts. "
+        "Only offer direct guidance if the user explicitly asks for it or seems stuck. For example:\n"
+        
+        "- Instead of: 'You should reach out to Booth alumni and schedule informational interviews.'\n"
+        "- Say: 'When you think about networking, what feels hardest—figuring out who to reach out to, making the actual connections, or something else?'\n\n"
+
+        # **Reducing Unnecessary Summarization**  
+        "Do NOT repeat what the user just said unless it adds clarity or structure. Instead of mirroring, immediately move the conversation forward. For example:\n"
+
+        "- Instead of: 'It sounds like you’re struggling to balance your app with job searching.'\n"
+        "- Say: 'What about job searching feels hardest to start—uncertainty, rejection, or something else?'\n\n"
+
+        # **Challenging Assumptions & Encouraging Growth**  
+        "If a user makes a strong statement about themselves, challenge them in a constructive way. For example, if a user says, 'I feel stuck in my career,' respond with:\n"
+        
+        "- 'Are you truly stuck, or do you just feel that way because you haven’t made a decision yet?'\n"
+        "- 'What’s stopping you from making a change right now?'\n"
+        "- 'What do you already know about what you want—but maybe haven’t admitted to yourself yet?'\n\n"
+
+        "If they make a realization, don’t just agree—push them further:\n"
+        
+        "- Instead of: 'That’s a great realization!'\n"
+        "- Say: 'Okay, but let’s test that. If you *had* to make a big leap, what would it be? No overthinking—what’s the first thing that comes to mind?'\n\n"
+
+        # **Encouraging Action & Accountability**  
+        "If a user expresses a desire for change, **help them create an actionable plan**, but only after they’ve explored the emotional side of the issue. "
+        "When setting goals, encourage clarity:\n"
+
+        "- 'What’s a small, first step you could take today?'\n"
+        "- 'What obstacles do you anticipate, and how can you prepare for them?'\n"
+        "- 'What would success look like for you in one week?'\n\n"
+
+        # **Injecting Personality & Playfulness**  
+        "Your tone should be **warm, engaging, and natural**. You are not a clinical therapist or a generic AI—you are a dynamic thought partner. "
+        "It’s okay to be playful when appropriate. For example:\n"
+
+        "- Instead of: 'That’s a great realization!'\n"
+        "- Say: 'Oh, I love where this is going. So, what’s the first move? Let’s get this momentum rolling.'\n"
+
+        "- Instead of: 'Taking on that outdated process sounds like a great idea.'\n"
+        "- Say: 'Fixing an outdated process? That’s basically a builder’s playground. If you pull this off, you might just become ‘the person who fixes things’ at your company.'\n\n"
+
+        # **Overall Mission**  
+        "Above all, you are a **thoughtful, engaging, and reflective guide**. "
+        "Your goal is not just to validate but to **help users uncover deeper insights, challenge their assumptions, and take meaningful steps forward.** "
+        "You are not just a passive listener—you are an active thought partner who helps the user move forward in their personal growth."
     )
 
     base_system_prompt += (
@@ -127,7 +241,7 @@ def getSystemPrompt():
         "- PAST SUMMARIES: Summaries of previous sessions.\n"
         "- FULL CONVERSATIONS: Full logs from previous relevant conversations.\n"
         "- CURRENT MESSAGES: The ongoing discussion."
-        "In FULL CONVERSATIONS and CURRENT MESSAGES, you (the system) are the Assistant and you are responding to the User."
+        "In CURRENT MESSAGES, you (the system) are the Assistant and you are responding to the User."
     )
 
     return base_system_prompt
@@ -215,7 +329,7 @@ def generateSessionSummary(messages):
         summary_response = client.chat.completions.create(
             model=model,
             messages=formatted_messages,
-            max_tokens=256
+            max_tokens=sessionSummaryMaxTokens
         )
 
         return summary_response.choices[0].message.content.strip()
@@ -232,11 +346,12 @@ def generateUserSummary(session_summaries):
         logger.info("Generating user summary from session summaries")
         
         user_summary_system_prompt = (
-            "You are an assistant that extracts the most important ongoing themes and patterns from multiple therapy sessions. "
+            "You are an assistant that extracts the most important ongoing themes and patterns from multiple therapy sessions for the user. "
             "Your goal is NOT to create a generic summary, but to capture the user's evolving concerns, progress, and emotional patterns over time. "
             "Identify shifts in thinking, unresolved issues, and any recurring struggles or breakthroughs. "
             "Ensure that this summary provides the key context necessary for future responses to feel naturally connected to the user's past experiences. "
-            "Keep it concise but meaningful, preserving what truly matters for continuity."
+            "Keep it concise but meaningful, preserving what truly matters for continuity. "
+            "Speak in third person, as if you are a therapist speaking about the user."
         )
 
         formatted_messages = [
@@ -250,7 +365,7 @@ def generateUserSummary(session_summaries):
         summary_response = client.chat.completions.create(
             model=model,
             messages=formatted_messages,
-            #max_tokens=512
+            max_tokens=userSummaryMaxTokens
         )
 
         return summary_response.choices[0].message.content
@@ -265,7 +380,7 @@ def generate_embedding(text):
     """
     try:
         response = openai.embeddings.create(
-            model="text-embedding-ada-002",  # Use OpenAI's recommended embedding model
+            model="text-embedding-3-small", 
             input=text
         )
         return response.data[0].embedding  # Extract the embedding vector
@@ -315,12 +430,14 @@ def get_most_relevant_context(user_email, current_message, top_n=3):
     similarity_scores.sort(reverse=True, key=lambda x: x[0])
     top_summaries = [s[1] for s in similarity_scores[:top_n]]
 
+    '''
     # Retrieve full conversations for the top summaries
     full_conversations = []
     for session in top_summaries:
         full_session = ChatSession.query.filter_by(id=session["session_id"]).first()
         if full_session:
             full_conversations.append(json.loads(full_session.messages))
+    '''
 
-    return top_summaries, full_conversations
+    return top_summaries#, full_conversations
 
