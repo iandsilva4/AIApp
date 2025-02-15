@@ -71,13 +71,13 @@ const Login = ({ setUser }) => {
   
           <div className="feature-card">
             <FaUserCheck className="feature-icon" />
-            <h3>Choose Your AI Persona</h3>
+            <h3>Choose Your AI Persona <span className="coming-soon-tag">Coming Soon</span></h3>
             <p>Select from different AI personalities—whether you prefer an empathetic guide, a direct coach, or a reflective thinker.</p>
           </div>
   
           <div className="feature-card">
             <FaChartLine className="feature-icon" />
-            <h3>Track Your Growth</h3>
+            <h3>Track Your Growth <span className="coming-soon-tag">Coming Soon</span></h3>
             <p>Personalized insights help you see patterns, track progress, and understand yourself over time.</p>
           </div>
 
