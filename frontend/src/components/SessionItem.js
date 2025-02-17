@@ -129,6 +129,7 @@ const SessionItem = ({
       <div className="session-preview">
         {session.messages?.length > 0 ? (
           <>
+            <span className="assistant-label">{session.assistant_name || 'AI Assistant'}</span>
             <span className="timestamp">{getTimeDisplay(session.timestamp)}</span>
           </>
         ) : (

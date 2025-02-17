@@ -23,7 +23,7 @@ sessionSummaryMaxTokens = 2048
 userSummaryMaxTokens = 2048
 responseMaxTokens = 1024
 
-def generate_ai_response(messages, user_email):
+def generate_ai_response(messages, user_email, assistant_id=None):
     """
     Generate an AI response using session summaries instead of full chat logs.
     """
@@ -43,18 +43,19 @@ def generate_ai_response(messages, user_email):
         # Step 2: Set max token budget (adjust based on model)
         MAX_TOKENS = 30000 
 
-        system_prompt = getSystemPrompt()
+        # Step 3: Get the appropriate system prompt (therapist's prompt if available, otherwise default)
+        system_prompt = getSystemPrompt(assistant_id)
 
-        # Step 3: Estimate token usage
+        # Step 4: Estimate token usage
         total_tokens = count_tokens(system_prompt)
 
-        # Step 4: Create lists for structured message ordering
+        # Step 5: Create lists for structured message ordering
         system_messages = [{"role": "system", "content": system_prompt}]
         current_session_messages = []
         past_summaries = []
         user_summary_messages = []
 
-        # Step 5: Add user summary if it exists
+        # Step 6: Add user summary if it exists
         if user_summary and user_summary.summary:
             user_summary_content = f"USER SUMMARY:\n{user_summary.summary}\n"
             user_summary_tokens = count_tokens(user_summary_content)
@@ -62,17 +63,17 @@ def generate_ai_response(messages, user_email):
                 user_summary_messages.append({"role": "system", "content": user_summary_content})
                 total_tokens += user_summary_tokens
 
-        # Step 6: Append only the most recent user-assistant exchanges (current session)
-        trimmed_messages = messages #messages[-8:]  # Use last 8 messages for better recency
+        # Step 7: Append only the most recent user-assistant exchanges (current session)
+        trimmed_messages = messages
         for msg in trimmed_messages:
             message_tokens = count_tokens(msg["content"])
             if total_tokens + message_tokens < MAX_TOKENS:
                 current_session_messages.append({"role": msg["role"], "content": msg["content"]})
                 total_tokens += message_tokens
             else:
-                break  # Stop adding messages if we hit the limit
+                break
 
-        # Step 7: Add past session summaries (if space allows)
+        # Step 8: Add past session summaries if space allows
         if session_summaries and total_tokens < MAX_TOKENS:
             past_summaries_content = "PAST SUMMARIES:\n"
             added_summaries = []
@@ -118,7 +119,7 @@ def generate_ai_response(messages, user_email):
                 "content": "This is a new session. Say hello!"
             })
 
-        # Step 8: Generate AI response
+        # Step 9: Generate AI response
         openai_response = client.chat.completions.create(
             model=model,
             messages=messages_list,
@@ -137,19 +138,32 @@ def generate_ai_response(messages, user_email):
         logger.error(f"[User: {user_email}] Error generating AI response: {str(e)}")
         return "I'm having trouble generating a response right now."
 
-def getSystemPrompt():
+def getSystemPrompt(assistant_id):
 
-    # Base system prompt
-    base_system_prompt = (
-        "You are a reflective and engaging thought partner, journaling assistant, and highly capable therapist, helping users explore emotions, challenge their thinking, and take meaningful steps forward. "
-        "Your primary role is to facilitate self-discovery rather than provide direct solutions. "
+    base_system_prompt = ""
 
-        # **Conversational & Natural Style**  
-        "Your responses should feel **natural, engaging, and thought-provoking**—not robotic or overly structured. "
-        #"Use formatting sparingly and only when it helps clarity. Do NOT start responses with a header—it’s unnatural in conversation.\n\n"
-        "Your tone should be warm, conversational, and concise—respond like a thoughtful friend who listens deeply and encourages meaningful reflection. \n\n"
-    )
-    
+    # Default system prompt if no assistant prompt is available
+
+    # Add assistant-specific system prompt if available
+    if assistant_id:
+        try:
+            from app.models.assistant import Assistant
+            assistant = Assistant.query.get(assistant_id)
+            if assistant and assistant.system_prompt:
+                base_system_prompt += "\nYour name is " + assistant.name + " and you are going to adopt the following personality: " + assistant.system_prompt + "\n\n"
+        except Exception as e:
+            logger.error(f"Error retrieving assistant system prompt for assistant_id {assistant_id}: {e}")
+    else:
+        base_system_prompt += (
+            "You are a reflective and engaging thought partner, journaling assistant, and highly capable assistant, helping users explore emotions, challenge their thinking, and take meaningful steps forward. "
+            "Your primary role is to facilitate self-discovery rather than provide direct solutions. "
+
+            # **Conversational & Natural Style**  
+            "Your responses should feel **natural, engaging, and thought-provoking**—not robotic or overly structured. "
+            #"Use formatting sparingly and only when it helps clarity. Do NOT start responses with a header—it’s unnatural in conversation.\n\n"
+            "Your tone should be warm, conversational, and concise—respond like a thoughtful friend who listens deeply and encourages meaningful reflection. \n\n"
+        )
+
     # How to be a therapist
     base_system_prompt += (
         "You need to strike a balance of being a thought partner and a therapist. "
@@ -176,7 +190,7 @@ def getSystemPrompt():
         "Balance questioning with observations: for example, you can have two responses focus on exploration questions, then third offers a reflective insight or psychoanalysis. "
     )
 
-
+    # detailed behavior instructions
     base_system_prompt += (
         # **Session Continuity & Accountability**  
         "You should recall key insights from previous sessions to maintain an evolving conversation. "
@@ -249,12 +263,13 @@ def getSystemPrompt():
         "You are not just a passive listener—you are an active thought partner who helps the user move forward in their personal growth."
     )
 
+
     base_system_prompt += (
         "The provided context is structured as follows:\n"
         "- USER SUMMARY: A summary of the user's long-term history of all sessions.\n"
         "- PAST SUMMARIES: Summaries of previous individual sessions.\n"
         #"- FULL CONVERSATIONS: Full logs from previous relevant conversations.\n"
-        "- CURRENT MESSAGES: The ongoing discussion."
+        "- CURRENT MESSAGES: The ongoing discussion. \n"
         "In CURRENT MESSAGES, you (the system) are the Assistant and you are responding to the User."
     )
 
