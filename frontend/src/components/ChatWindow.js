@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
 import "./ChatWindow.css";
-import assistantIcon from '../assets/assistant-icon.svg'; // You'll need to add this icon
 import defaultUserIcon from '../assets/default-user-icon.svg';
 import { ReactComponent as SidebarToggleIcon } from '../assets/sidebar-toggle-icon.svg';
 import { ReactComponent as SendIcon } from '../assets/send-icon.svg';
@@ -230,9 +229,9 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
   };
 
   // Add helper to get current session data
-  const getCurrentSession = () => {
+  const getCurrentSession = useCallback(() => {
     return sessions.find(s => s.id === activeSession);
-  };
+  }, [sessions, activeSession]);
 
   // Update current assistant when session changes
   useEffect(() => {
@@ -250,7 +249,7 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
         assistant_name: session.assistant_name
       });
     }
-  }, [activeSession, sessions]);
+  }, [activeSession, sessions, getCurrentSession]);
 
   return (
     <div className="chat-window">

@@ -329,12 +329,19 @@ def update_user_summary(user_email):
         logger.error(f"User Summary Update Error: {e}")
 
 @chat_bp.route('/assistants', methods=['GET'])
-def get_assistants():
+@authenticate
+def get_assistants(user_email):
     """
     Retrieve all assistants from the database.
     """
     try:
-        assistants = Assistant.query.all()
+        assistants = Assistant.query.filter(
+            Assistant.is_globally_hidden == False,
+            db.or_( 
+                Assistant.created_by == 'admin',
+                Assistant.created_by == user_email
+            )
+        ).all()
         result = []
         for assistant in assistants:
             result.append({
@@ -347,4 +354,4 @@ def get_assistants():
         return jsonify(result), 200
     except Exception as e:
         logger.error(f"Failed to retrieve assistants: {e}")
-        return jsonify({"error": "Failed to retrieve assistants"}), 500 
+        return jsonify({"error": "Failed to retrieve assistants"}), 500

@@ -141,7 +141,7 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
       const token = await user.getIdToken();
       const response = await axios.put(
         `${process.env.REACT_APP_BACKEND_URL}/sessions/${id}`,
-        { title },
+        { title, user_email: user.email },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

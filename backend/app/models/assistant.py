@@ -8,4 +8,5 @@ class Assistant(db.Model):
     system_prompt = db.Column(db.Text, nullable=False)
     avatar_url = db.Column(db.String(255), nullable=True)
     created_by = db.Column(db.String(255), nullable=False)
-    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)) 
+    created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    is_globally_hidden = db.Column(db.Boolean, nullable=True, default=False)
