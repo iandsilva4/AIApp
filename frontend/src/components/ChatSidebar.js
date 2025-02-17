@@ -17,6 +17,14 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
     creating: false
   });
 
+  // NEW: Store available assistants list and the currently selected assistant
+  const [assistants, setAssistants] = useState([]);
+  const [selectedAssistant, setSelectedAssistant] = useState(1);
+
+  // NEW: State for new session modal
+  const [showAssistantSelection, setShowAssistantSelection] = useState(false);
+  const [modalSessionTitle, setModalSessionTitle] = useState("");
+
   // Fetch existing sessions with retry mechanism
   const fetchSessions = useCallback(async (retryCount = 0) => {
     if (!user) return;
@@ -52,6 +60,28 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
     }
   }, [fetchSessions, user]);
 
+  // NEW: Fetch available assistants from the backend
+  useEffect(() => {
+    const fetchAssistants = async () => {
+      try {
+        const token = await user.getIdToken();
+        const response = await axios.get(
+          `${process.env.REACT_APP_BACKEND_URL}/assistants`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setAssistants(response.data);
+        if (response.data && response.data.length > 0) {
+          setSelectedAssistant(response.data[0].id);
+        }
+      } catch (err) {
+        console.error("Failed to fetch assistants", err);
+      }
+    };
+    if (user) {
+      fetchAssistants();
+    }
+  }, [user]);
+
   // Refresh when active session changes
   useEffect(() => {
     if (activeSession) {
@@ -85,15 +115,20 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
 
       const response = await axios.post(
         `${process.env.REACT_APP_BACKEND_URL}/sessions`,
-        { title },
+        { 
+          title: modalSessionTitle || title,
+          assistant_id: parseInt(selectedAssistant)
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       setSessions([response.data, ...sessions]);
-      setActiveSession(response.data.id);  // Already setting active session here
+      setActiveSession(response.data.id);
       setEditingSessionId(response.data.id);
       setNewTitle(response.data.title);
       setOpenSection('active');
+      setShowAssistantSelection(false);
+      setModalSessionTitle("");
     } catch (err) {
       handleError("Failed to create a new session.", err);
     } finally {
@@ -214,12 +249,16 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
       <div className="chat-sidebar-header">
         <div className="header-title">Chats</div>
         <div className="header-button-section">
-          <button className="icon-button" title="Hide sidebar" onClick={() => setIsSidebarOpen(false)}>
+          <button 
+            className="icon-button" 
+            title="Hide sidebar" 
+            onClick={() => setIsSidebarOpen(false)}
+          >
             <SidebarToggleIcon />
           </button>
           <button 
             className="icon-button" 
-            onClick={() => createNewSession()} 
+            onClick={() => setShowAssistantSelection(true)}
             title="New chat"
             disabled={loadingStates.creating}
           >
@@ -257,6 +296,46 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
           </div>
         )}
       </div>
+
+      {/* NEW: Modal for assistant selection & new session title */}
+      {showAssistantSelection && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>Create New Chat</h3>
+            <div>
+              <label htmlFor="modal-session-title">Chat Title:</label>
+              <input 
+                id="modal-session-title"
+                type="text" 
+                value={modalSessionTitle} 
+                onChange={(e) => setModalSessionTitle(e.target.value)} 
+                placeholder="New Chat"
+              />
+            </div>
+            <div>
+              <label htmlFor="assistant-select-modal">Assistant:</label>
+              <select 
+                id="assistant-select-modal"
+                value={selectedAssistant}
+                onChange={(e) => setSelectedAssistant(e.target.value)}
+              >
+                {assistants.map(assistant => (
+                  <option key={assistant.id} value={assistant.id}>
+                    {assistant.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="modal-buttons">
+              <button onClick={() => createNewSession()}>Create Chat</button>
+              <button onClick={() => {
+                setShowAssistantSelection(false);
+                setModalSessionTitle("");
+              }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

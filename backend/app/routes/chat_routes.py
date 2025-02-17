@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from app.models.chat_session import ChatSession
 from app.models.user_summary import UserSummary
+from app.models.assistant import Assistant
 from app.services.ai_service import generate_ai_response, generateSessionSummary, generateUserSummary, generate_embedding
 from app.utils.decorators import authenticate
 from app.__init__ import db
@@ -50,15 +51,17 @@ def create_session(user_email):
         for session in active_sessions:
             session.is_ended = True
         
-        # Create new session
-        session = ChatSession(user_email=user_email, title=title, messages=json.dumps([]), summary="")
+        # Create new session with the selected assistant
+        assistant_id = data.get("assistant_id", 1)
+        session = ChatSession(user_email=user_email, title=title, messages=json.dumps([]), summary="", assistant_id=assistant_id)
         db.session.add(session)
         db.session.commit()
 
         # Generate AI response
         ai_message = generate_ai_response(
             messages=[],
-            user_email=user_email
+            user_email=user_email,
+            assistant_id=assistant_id
         )
 
         # Save AI's first message
@@ -218,6 +221,7 @@ def chat_with_ai(user_email):
         data = request.json
         session_id = data.get("session_id")
         message = data.get("message")
+        assistant_id = data.get("assistant_id")
 
         if not session_id or not message:
             return jsonify({"error": "Session ID and message are required"}), 400
@@ -238,7 +242,8 @@ def chat_with_ai(user_email):
         # Generate AI response
         ai_response = generate_ai_response(
             messages=current_messages,
-            user_email=user_email
+            user_email=user_email,
+            assistant_id=assistant_id
         )
 
         # Update messages
@@ -323,4 +328,23 @@ def update_user_summary(user_email):
     except Exception as e:
         logger.error(f"User Summary Update Error: {e}")
 
-            
+@chat_bp.route('/assistants', methods=['GET'])
+def get_assistants():
+    """
+    Retrieve all assistants from the database.
+    """
+    try:
+        assistants = Assistant.query.all()
+        result = []
+        for assistant in assistants:
+            result.append({
+                "id": assistant.id,
+                "name": assistant.name,
+                "system_prompt": assistant.system_prompt,
+                "created_by": assistant.created_by,
+                "created_at": assistant.created_at.isoformat() if assistant.created_at else None
+            })
+        return jsonify(result), 200
+    except Exception as e:
+        logger.error(f"Failed to retrieve assistants: {e}")
+        return jsonify({"error": "Failed to retrieve assistants"}), 500 

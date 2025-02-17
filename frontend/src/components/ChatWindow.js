@@ -21,6 +21,7 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
   const [isLoading, setIsLoading] = useState(false);
   const [isAIResponding, setIsAIResponding] = useState(false);
   const [isEndingSession, setIsEndingSession] = useState(false);
+  const [currentAssistant, setCurrentAssistant] = useState(null);
 
   // Reset textarea height
   const resetTextareaHeight = () => {
@@ -108,6 +109,13 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
       return;
     }
 
+    // Find the current session data
+    const currentSession = sessions.find(s => s.id === activeSession);
+    if (!currentSession) {
+      setErrorMessage("Session data not found.");
+      return;
+    }
+
     const userMessage = { role: "user", content: input };
     
     // Immediately add user message to the chat
@@ -133,7 +141,11 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
       // Fetch AI response
       const response = await axios.post(
         `${process.env.REACT_APP_BACKEND_URL}/chat/respond`,
-        { session_id: activeSession, message: input },
+        { 
+          session_id: activeSession, 
+          message: input,
+          assistant_id: currentSession.assistant_id
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
   
@@ -222,6 +234,24 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
     return sessions.find(s => s.id === activeSession);
   };
 
+  // Update current assistant when session changes
+  useEffect(() => {
+    const session = getCurrentSession();
+    console.log("Current session:", {
+      session,
+      assistant_id: session?.assistant_id,
+      assistant_name: session?.assistant_name,
+      allSessions: sessions
+    });
+    if (session) {
+      setCurrentAssistant(session);
+      console.log("Current assistant state:", {
+        assistant_id: session.assistant_id,
+        assistant_name: session.assistant_name
+      });
+    }
+  }, [activeSession, sessions]);
+
   return (
     <div className="chat-window">
       <div className="chat-header">
@@ -231,7 +261,7 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
           </button>
         )}
         <div className="header-title">
-          <span>Chat with Ian</span>
+          <span>Chat with {currentAssistant?.assistant_name || 'AI Assistant'}</span>
         </div>
         {activeSession && !getCurrentSession()?.is_ended && (
           <button 
@@ -280,7 +310,17 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
               msg.role === 'assistant' ? (
                 <div key={index} className="message-container assistant">
                   <div className="profile-icon assistant">
-                    <img src={assistantIcon} alt="Assistant" />
+                    {currentAssistant?.assistant_avatar ? (
+                      <img 
+                        src={currentAssistant.assistant_avatar} 
+                        alt={currentAssistant.assistant_name || 'Assistant'} 
+                        className="assistant-avatar"
+                      />
+                    ) : (
+                      <div className="assistant-initial">
+                        {(currentAssistant?.assistant_name || 'A')[0].toUpperCase()}
+                      </div>
+                    )}
                   </div>
                   <div className={`message ${msg.role} ${msg.isLoading ? 'loading' : ''}`}>
                     {msg.isLoading && index === messages.length - 1 ? (
@@ -290,7 +330,18 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
                         <span></span>
                       </div>
                     ) : (
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      <>
+                        {currentAssistant && (
+                          <div className="assistant-name">
+                            {console.log("Rendering assistant name:", {
+                              currentAssistant,
+                              name: currentAssistant.assistant_name
+                            })}
+                            {currentAssistant.assistant_name || 'AI Assistant'}
+                          </div>
+                        )}
+                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      </>
                     )}
                   </div>
                 </div>
@@ -308,7 +359,17 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
             {isAIResponding && !messages[messages.length - 1]?.isLoading && (
               <div className="message-container assistant">
                 <div className="profile-icon assistant">
-                  <img src={assistantIcon} alt="Assistant" />
+                  {currentAssistant?.assistant_avatar ? (
+                    <img 
+                      src={currentAssistant.assistant_avatar} 
+                      alt={currentAssistant.assistant_name || 'Assistant'} 
+                      className="assistant-avatar"
+                    />
+                  ) : (
+                    <div className="assistant-initial">
+                      {(currentAssistant?.assistant_name || 'A')[0].toUpperCase()}
+                    </div>
+                  )}
                 </div>
                 <div className="message assistant loading">
                   <div className="typing-indicator">
