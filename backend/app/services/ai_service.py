@@ -1,4 +1,5 @@
 import openai
+import os
 from app.models.chat_session import ChatSession
 from app.models.user_summary import UserSummary
 import json
@@ -16,10 +17,11 @@ logger = logging.getLogger(__name__)
 
 client = openai
 client.api_key = Config.OPENAI_API_KEY
-model = "gpt-4o-mini"
+model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+logger.info(f"Using OpenAI model: {model}")
 sessionSummaryMaxTokens = 2048
 userSummaryMaxTokens = 2048
-responseMaxTokens = 2048
+responseMaxTokens = 1024
 
 def generate_ai_response(messages, user_email):
     """
