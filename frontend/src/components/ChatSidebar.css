@@ -81,6 +81,7 @@
   letter-spacing: 0.5px;
   transition: background-color 0.2s ease;
   margin-top: 8px;
+  padding-right: 28px;
 }
 
 .chat-sidebar-section:hover {
@@ -92,6 +93,11 @@
   font-size: 10px;
   transition: transform 0.3s ease;
   opacity: 0.7;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .section-toggle.open {
@@ -139,7 +145,7 @@
 
 /* Session lists */
 .session-list {
-  padding: 4px 20px 20px 20px;
+  padding: 4px 0px 20px 20px;
   margin: 0;
   margin-right: 8px;
   overflow-y: auto;
@@ -610,7 +616,7 @@
   }
 
   .chat-sidebar-section {
-    padding: 12px 20px; /* Match the same left padding */
+    padding: 12px 28px 12px 20px; /* Adjust right padding for mobile */
     margin-top: 0;
   }
 
