@@ -86,7 +86,7 @@ const SessionItem = ({
         ) : (
           <>
             <div className={`session-title ${session.is_ended ? 'ended' : ''}`}>
-              {session.title}
+              {session.title}&nbsp;
               {session.is_ended && <span className="ended-badge">Ended</span>}
             </div>
             <div className="session-actions">
