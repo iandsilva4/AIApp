@@ -455,6 +455,10 @@
   font-style: normal;
 }
 
+.session-title.ended p {
+  margin-right: 8px;
+}
+
 /* Override the default active blue background for ended sessions */
 .session-item.active {
   background-color: rgb(240, 250, 255);
@@ -477,7 +481,9 @@
   background-color: #f3f3f3;
   color: #666;
   border-radius: 4px;
-  margin-left: 8px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+
   font-weight: normal;
   border: 1px solid #e0e0e0;
   text-transform: uppercase;
