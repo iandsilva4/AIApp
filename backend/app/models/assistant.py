@@ -10,3 +10,4 @@ class Assistant(db.Model):
     created_by = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     is_globally_hidden = db.Column(db.Boolean, nullable=True, default=False)
+    short_desc = db.Column(db.Text, nullable=False)
