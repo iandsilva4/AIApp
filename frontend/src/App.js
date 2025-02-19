@@ -16,6 +16,7 @@ const App = () => {
   const [isAuthReady, setIsAuthReady] = useState(false); // Add this state
   const [sessions, setSessions] = useState([]);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [isCreatingNewSession, setIsCreatingNewSession] = useState(false);
 
 
   // Listen for authentication state changes
@@ -83,6 +84,7 @@ const App = () => {
               setIsSidebarOpen={setIsSidebarOpen}
               sessions={sessions}
               setSessions={setSessions}
+              setIsCreatingNewSession={setIsCreatingNewSession}
             />
           </div>
         )}
@@ -102,6 +104,8 @@ const App = () => {
               }}
               sessions={sessions}
               setSessions={setSessions}
+              setActiveSession={setActiveSession}
+              isCreatingNewSession={isCreatingNewSession}
             />
           </div>
         )}

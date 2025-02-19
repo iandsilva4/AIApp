@@ -6,7 +6,7 @@ import { ReactComponent as SidebarToggleIcon } from '../assets/sidebar-toggle-ic
 import '../styles/shared.css';
 import SessionItem from './SessionItem';
 
-const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, sessions, setSessions, handleEndSession }) => {
+const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, sessions, setSessions, handleEndSession, setIsCreatingNewSession }) => {
   const [newTitle, setNewTitle] = useState("");
   const [error, setError] = useState("");
   const [editingSessionId, setEditingSessionId] = useState(null);
@@ -124,7 +124,7 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
 
       setSessions([response.data, ...sessions]);
       setActiveSession(response.data.id);
-      setEditingSessionId(response.data.id);
+      /*setEditingSessionId(response.data.id);*/
       setNewTitle(response.data.title);
       setOpenSection('active');
       setShowAssistantSelection(false);
@@ -133,6 +133,7 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
       handleError("Failed to create a new session.", err);
     } finally {
       setLoadingStates(prev => ({ ...prev, creating: false }));
+      setIsCreatingNewSession(false);
     }
   };
 
@@ -258,7 +259,10 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
           </button>
           <button 
             className="icon-button" 
-            onClick={() => setShowAssistantSelection(true)}
+            onClick={() => {
+              setShowAssistantSelection(true);
+              setIsCreatingNewSession(true);
+            }}
             title="New chat"
             disabled={loadingStates.creating}
           >
@@ -331,6 +335,7 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
               <button onClick={() => {
                 setShowAssistantSelection(false);
                 setModalSessionTitle("");
+                setIsCreatingNewSession(false);
               }}>Cancel</button>
             </div>
           </div>

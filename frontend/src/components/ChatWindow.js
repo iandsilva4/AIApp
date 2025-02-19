@@ -9,7 +9,7 @@ import '../styles/shared.css';
 import ReactMarkdown from 'react-markdown';
 
 
-const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sessions, setSessions, setActiveSession }) => {
+const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sessions, setSessions, setActiveSession, isCreatingNewSession }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -21,6 +21,7 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
   const [isAIResponding, setIsAIResponding] = useState(false);
   const [isEndingSession, setIsEndingSession] = useState(false);
   const [currentAssistant, setCurrentAssistant] = useState(null);
+  const [availableAssistants, setAvailableAssistants] = useState([]);
 
   // Reset textarea height
   const resetTextareaHeight = () => {
@@ -236,12 +237,6 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
   // Update current assistant when session changes
   useEffect(() => {
     const session = getCurrentSession();
-    console.log("Current session:", {
-      session,
-      assistant_id: session?.assistant_id,
-      assistant_name: session?.assistant_name,
-      allSessions: sessions
-    });
     if (session) {
       setCurrentAssistant(session);
       console.log("Current assistant state:", {
@@ -250,6 +245,54 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
       });
     }
   }, [activeSession, sessions, getCurrentSession]);
+
+  // Add this new useEffect to fetch assistants
+  useEffect(() => {
+    const fetchAssistants = async () => {
+      if (!user) return;
+      
+      try {
+        const token = await user.getIdToken();
+        const response = await axios.get(
+          `${process.env.REACT_APP_BACKEND_URL}/assistants`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setAvailableAssistants(response.data);
+      } catch (error) {
+        console.error("Failed to fetch assistants:", error);
+        setErrorMessage("Failed to load assistants.");
+      }
+    };
+
+    fetchAssistants();
+  }, [user]);
+
+  // Replace the existing renderStartingNewChat function with this new version
+  const renderStartingNewChat = () => (
+    <div className="welcome-message assistants-grid">
+      <h2>Our Assistants</h2>
+      <div className="assistants-list">
+        {availableAssistants.map((assistant) => (
+          <div key={assistant.id} className="assistant-card">
+            <div className="assistant-avatar">
+              {assistant.avatar_url ? (
+                <img src={assistant.avatar_url} alt={assistant.name} />
+              ) : (
+                <div className="assistant-initial">
+                  {(assistant.name?.[0] || 'A').toUpperCase()}
+                </div>
+              )}
+            </div>
+            <h3>{assistant.name}</h3>
+            <p>{assistant.short_desc}</p>
+          </div>
+        ))}
+        {availableAssistants.length === 0 && (
+          <div className="loading-spinner"></div>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div className="chat-window">
@@ -285,9 +328,11 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
       )}
       
       <div className="messages" ref={messagesEndRef}>
-        {!activeSession ? (
+        {isCreatingNewSession ? (
+          renderStartingNewChat()
+        ) : !activeSession ? (
           <div className="welcome-message">
-            <h2>Welcome to your AI Assistant! 👋</h2>
+            <h2>Welcome to your AI Assistant!<span className="welcome-emoji">👋</span></h2>
             <div className="welcome-steps">
               <p>Get started in 3 simple steps:</p>
               <ol>
@@ -296,6 +341,7 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
                 <li>Get instant, helpful responses from your AI assistant</li>
               </ol>
               <p className="welcome-hint">Feel free to share your thoughts, feelings, or experiences. I'm here to listen, reflect, and support your journey.</p>
+              <p className="welcome-hint">When you're done, end the conversation and we'll store it in memory. If you don't want us to remember it, you can archive or delete it!</p>
             </div>
           </div>
         ) : isLoading ? (
@@ -317,7 +363,7 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
                       />
                     ) : (
                       <div className="assistant-initial">
-                        {(currentAssistant?.assistant_name || 'A')[0].toUpperCase()}
+                        {(currentAssistant?.assistant_name?.[0] || 'A').toUpperCase()}
                       </div>
                     )}
                   </div>
@@ -332,10 +378,6 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
                       <>
                         {currentAssistant && (
                           <div className="assistant-name">
-                            {console.log("Rendering assistant name:", {
-                              currentAssistant,
-                              name: currentAssistant.assistant_name
-                            })}
                             {currentAssistant.assistant_name || 'AI Assistant'}
                           </div>
                         )}
@@ -366,7 +408,7 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
                     />
                   ) : (
                     <div className="assistant-initial">
-                      {(currentAssistant?.assistant_name || 'A')[0].toUpperCase()}
+                      {(currentAssistant?.assistant_name?.[0] || 'A').toUpperCase()}
                     </div>
                   )}
                 </div>

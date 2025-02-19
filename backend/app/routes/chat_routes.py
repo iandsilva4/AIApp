@@ -341,7 +341,7 @@ def get_assistants(user_email):
                 Assistant.created_by == 'admin',
                 Assistant.created_by == user_email
             )
-        ).all()
+        ).order_by(Assistant.id).all()
         result = []
         for assistant in assistants:
             result.append({
@@ -349,7 +349,10 @@ def get_assistants(user_email):
                 "name": assistant.name,
                 "system_prompt": assistant.system_prompt,
                 "created_by": assistant.created_by,
-                "created_at": assistant.created_at.isoformat() if assistant.created_at else None
+                "created_at": assistant.created_at.isoformat() if assistant.created_at else None,
+                "avatar_url": assistant.avatar_url,
+                "is_globally_hidden": assistant.is_globally_hidden,
+                "short_desc": assistant.short_desc
             })
         return jsonify(result), 200
     except Exception as e:
