@@ -332,8 +332,8 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
                   </div>
                   <div className="assistant-card">
                     <div className="assistant-avatar">
-                      {goal.icon_url ? (
-                        <img src={goal.icon_url} alt={goal.name} />
+                      {goal.avatar_url ? (
+                        <img src={goal.avatar_url} alt={goal.name} />
                       ) : (
                         <div className="assistant-initial">
                           {(goal.name?.[0] || 'G').toUpperCase()}
