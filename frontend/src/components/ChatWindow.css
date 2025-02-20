@@ -738,8 +738,8 @@
 
 .assistants-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 32px 20px;
   align-content: start;
   padding: 0 20px 20px 20px;
   box-sizing: border-box;
@@ -765,6 +765,7 @@
   cursor: pointer;
   position: relative;
   z-index: 0;
+  flex: 1;
 }
 
 .assistant-card:hover {
@@ -783,6 +784,7 @@
   align-items: center;
   justify-content: center;
   background: #f0f2f5;
+  flex-shrink: 0;
 }
 
 .assistant-card .assistant-avatar img {
@@ -806,6 +808,7 @@
 .assistant-card h3 {
   margin: 0 0 8px 0;
   color: var(--text-primary);
+  flex-shrink: 0;
 }
 
 .assistant-card p {
@@ -914,8 +917,12 @@
 /* Add these styles for the goal category */
 .goal-container {
   position: relative;
-  padding-top: 16px;
+  padding-top: 10px;
+  margin-bottom: 16px;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .category-tag {
@@ -993,4 +1000,15 @@
   border-color: rgba(74, 85, 104, 0.2);
 }
 
-/* Remove old category styles */
+/* Add new guidance category style */
+.category-tag[data-category="guidance"] {
+  background: rgba(154, 230, 180, 0.2);  /* Light green background */
+  color: #2f855a;  /* Darker green text */
+  border-color: rgba(47, 133, 90, 0.1);
+}
+
+/* Add hover state for guidance category */
+.goal-container:hover .category-tag[data-category="guidance"] {
+  background: rgba(154, 230, 180, 0.3);
+  border-color: rgba(47, 133, 90, 0.2);
+}
