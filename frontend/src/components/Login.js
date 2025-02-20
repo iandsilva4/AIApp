@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { signInWithGoogle, auth } from "../Firebase";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, getRedirectResult } from "firebase/auth";
 import "./Login.css";
 import { 
   FaGoogle, 
@@ -11,6 +11,25 @@ import {
 
 const Login = ({ setUser }) => {
   useEffect(() => {
+    // First check for redirect result
+    const handleRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          setUser(result.user);
+          localStorage.setItem("user", JSON.stringify(result.user));
+        }
+      } catch (error) {
+        console.error("Redirect sign-in error:", error);
+        // Clear any potentially corrupted state
+        localStorage.removeItem("user");
+        sessionStorage.clear();
+      }
+    };
+
+    handleRedirectResult();
+
+    // Then set up auth state listener
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUser(user);
@@ -25,9 +44,16 @@ const Login = ({ setUser }) => {
   }, [setUser]);
 
   const handleLogin = async () => {
-    const loggedInUser = await signInWithGoogle();
-    if (loggedInUser) {
-      setUser(loggedInUser);
+    try {
+      const loggedInUser = await signInWithGoogle();
+      if (loggedInUser) {
+        setUser(loggedInUser);
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      // Clear any potentially corrupted state
+      localStorage.removeItem("user");
+      sessionStorage.clear();
     }
   };
 

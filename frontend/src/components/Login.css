@@ -12,10 +12,10 @@
   align-items: center;
   padding: 1rem;
   box-sizing: border-box;
-  position: relative;
+  position: fixed;
   perspective: 1000px;
   perspective-origin: center;
-  overflow-y: auto;
+  overflow: auto;
   overflow-x: hidden;
   width: 100%;
 }
@@ -437,17 +437,28 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .landing-page {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    padding: 1rem;
-    align-items: flex-start;
-    overflow-y: scroll;
+    position: fixed;
+    height: 100%;
+    min-height: 100%;
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
 
+  .landing-content {
+    padding-bottom: 4rem;
+    position: relative;
+    z-index: 2;
+  }
+
+  .grid-background,
+  .grid-overlay,
+  .grid-distortion,
+  .floating-elements,
+  .gradient-spots {
+    position: fixed;
+    height: 100%;
+    width: 100%;
+  }
 
   .hero-section {
     padding: 2rem;
