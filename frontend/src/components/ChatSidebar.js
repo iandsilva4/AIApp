@@ -331,12 +331,26 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
               </select>
             </div>
             <div className="modal-buttons">
-              <button onClick={() => createNewSession()}>Create Chat</button>
-              <button onClick={() => {
-                setShowAssistantSelection(false);
-                setModalSessionTitle("");
-                setIsCreatingNewSession(false);
-              }}>Cancel</button>
+              <button 
+                onClick={() => createNewSession()} 
+                disabled={loadingStates.creating}
+              >
+                {loadingStates.creating ? (
+                  <div className="button-spinner"></div>
+                ) : (
+                  'Create Chat'
+                )}
+              </button>
+              <button 
+                onClick={() => {
+                  setShowAssistantSelection(false);
+                  setModalSessionTitle("");
+                  setIsCreatingNewSession(false);
+                }}
+                disabled={loadingStates.creating}
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>

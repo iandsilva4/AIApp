@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from app.models.chat_session import ChatSession
 from app.models.user_summary import UserSummary
 from app.models.assistant import Assistant
+from app.models.goals import Goals
 from app.services.ai_service import generate_ai_response, generateSessionSummary, generateUserSummary, generate_embedding
 from app.utils.decorators import authenticate
 from app.__init__ import db
@@ -40,13 +41,28 @@ def create_session(user_email):
         if not title:
             return jsonify({"error": "Session title cannot be empty"}), 400
 
-        # End previous active sessions
+        # End previous active sessions and generate summaries
         active_sessions = ChatSession.query.filter_by(
             user_email=user_email,
             is_deleted=False,
             is_archived=False,
             is_ended=False
         ).all()
+
+        # Generate summaries for active sessions before ending them
+        for session in active_sessions:
+            messages = json.loads(session.messages)
+            if messages:  # Only generate summary if there are messages
+                session_summary = generateSessionSummary(messages)
+                session.summary = session_summary
+                
+                # Generate embedding for the summary
+                session_embedding = generate_embedding(session_summary)
+                session.summary_embedding = json.dumps(session_embedding)
+
+        # Update user summary if there are active sessions
+        if active_sessions:
+            update_user_summary(user_email)
         
         for session in active_sessions:
             session.is_ended = True
@@ -358,3 +374,31 @@ def get_assistants(user_email):
     except Exception as e:
         logger.error(f"Failed to retrieve assistants: {e}")
         return jsonify({"error": "Failed to retrieve assistants"}), 500
+
+@chat_bp.route('/goals', methods=['GET'])
+@authenticate
+def get_goals(user_email):
+    """
+    Retrieve all goals from the database.
+    """
+    try:
+        goals = Goals.query.filter(
+            Goals.created_by == user_email
+        ).order_by(Goals.id).all()
+        result = []
+        for goal in goals:
+            result.append({
+                "id": goal.id,
+                "category": goal.category,
+                "name": goal.name,
+                "system_prompt": goal.system_prompt,
+                "created_by": goal.created_by,
+                "created_at": goal.created_at.isoformat() if goal.created_at else None,
+                "avatar_url": goal.avatar_url,
+                "is_globally_hidden": goal.is_globally_hidden,
+                "short_desc": goal.short_desc
+            })
+        return jsonify(result), 200
+    except Exception as e:
+        logger.error(f"Failed to retrieve goals: {e}")
+        return jsonify({"error": "Failed to retrieve goals"}), 500
