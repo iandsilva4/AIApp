@@ -113,7 +113,14 @@ def generate_ai_response(messages, user_email, assistant_id=None):
         # Step 8: Assemble messages in correct order (system → user summary → past summaries → current session)
         messages_list = system_messages + user_summary_messages + past_summaries + current_session_messages
         
-        if not current_session_messages:
+
+
+        if not current_session_messages and not user_summary_messages:
+            messages_list.append({
+                "role": "system", 
+                "content": "This is your first ever session with them. Say hello!"
+            })
+        elif not current_session_messages:
             messages_list.append({
                 "role": "system", 
                 "content": "This is a new session. Say hello!"
@@ -159,8 +166,6 @@ def getSystemPrompt(assistant_id):
         # Default system prompt if no assistant prompt is available
         base_system_prompt += (
             "You are a reflective and engaging thought partner, journaling assistant, and highly capable assistant, helping users explore emotions, challenge their thinking, and take meaningful steps forward. "
-            "Your primary role is to facilitate self-discovery rather than provide direct solutions. "
-
             # **Conversational & Natural Style**  
             "Your responses should feel **natural, engaging, and thought-provoking**—not robotic or overly structured. "
             #"Use formatting sparingly and only when it helps clarity. Do NOT start responses with a header—it's unnatural in conversation.\n\n"
