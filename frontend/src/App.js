@@ -21,11 +21,24 @@ const App = () => {
 
   // Listen for authentication state changes
   useEffect(() => {
+    // Try to get user from localStorage first
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (e) {
+        localStorage.removeItem("user");
+      }
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setIsAuthReady(true);
-      // Clear active session and sessions when user changes
-      if (!currentUser) {
+      
+      if (currentUser) {
+        localStorage.setItem("user", JSON.stringify(currentUser));
+      } else {
+        localStorage.removeItem("user");
         setActiveSession(null);
         setSessions([]);
       }
