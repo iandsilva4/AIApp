@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
 import "./ChatSidebar.css";
 import { ReactComponent as NewChatIcon } from '../assets/new-chat-icon.svg';
@@ -24,6 +24,22 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
   // NEW: State for new session modal
   const [showAssistantSelection, setShowAssistantSelection] = useState(false);
   const [modalSessionTitle, setModalSessionTitle] = useState("");
+
+  // Add goals to the state declarations near the top
+  const [goals, setGoals] = useState([]);
+  const [selectedGoals, setSelectedGoals] = useState([]);
+
+  // First, let's organize the goals by category
+  const groupedGoals = useMemo(() => {
+    const groups = {};
+    goals.forEach(goal => {
+      if (!groups[goal.category]) {
+        groups[goal.category] = [];
+      }
+      groups[goal.category].push(goal);
+    });
+    return groups;
+  }, [goals]);
 
   // Fetch existing sessions with retry mechanism
   const fetchSessions = useCallback(async (retryCount = 0) => {
@@ -62,23 +78,37 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
 
   // NEW: Fetch available assistants from the backend
   useEffect(() => {
-    const fetchAssistants = async () => {
+    const fetchGoalsAndAssistants = async () => {
       try {
         const token = await user.getIdToken();
-        const response = await axios.get(
-          `${process.env.REACT_APP_BACKEND_URL}/assistants`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setAssistants(response.data);
-        if (response.data && response.data.length > 0) {
-          setSelectedAssistant(response.data[0].id);
+        const [assistantsRes, goalsRes] = await Promise.all([
+          axios.get(
+            `${process.env.REACT_APP_BACKEND_URL}/assistants`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          ),
+          axios.get(
+            `${process.env.REACT_APP_BACKEND_URL}/goals`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          )
+        ]);
+        
+        setAssistants(assistantsRes.data);
+        setGoals(goalsRes.data);
+        
+        if (assistantsRes.data?.length > 0) {
+          setSelectedAssistant(assistantsRes.data[0].id);
         }
+
+        console.log('Fetched goals:', goalsRes.data);
+        console.log('Fetched assistants:', assistantsRes.data);
       } catch (err) {
-        console.error("Failed to fetch assistants", err);
+        console.error("Failed to fetch assistants and goals", err);
+        setError("Failed to load assistants and goals");
       }
     };
+    
     if (user) {
-      fetchAssistants();
+      fetchGoalsAndAssistants();
     }
   }, [user]);
 
@@ -117,7 +147,8 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
         `${process.env.REACT_APP_BACKEND_URL}/sessions`,
         { 
           title: modalSessionTitle || title,
-          assistant_id: parseInt(selectedAssistant)
+          assistant_id: parseInt(selectedAssistant),
+          goal_ids: selectedGoals
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -129,6 +160,7 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
       setOpenSection('active');
       setShowAssistantSelection(false);
       setModalSessionTitle("");
+      setSelectedGoals([]);
     } catch (err) {
       handleError("Failed to create a new session.", err);
     } finally {
@@ -306,29 +338,59 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
         <div className="modal-overlay">
           <div className="modal">
             <h3>Create New Chat</h3>
-            <div>
-              <label htmlFor="modal-session-title">Chat Title:</label>
-              <input 
-                id="modal-session-title"
-                type="text" 
-                value={modalSessionTitle} 
-                onChange={(e) => setModalSessionTitle(e.target.value)} 
-                placeholder="New Chat"
-              />
-            </div>
-            <div>
-              <label htmlFor="assistant-select-modal">Coach:</label>
-              <select 
-                id="assistant-select-modal"
-                value={selectedAssistant}
-                onChange={(e) => setSelectedAssistant(e.target.value)}
-              >
-                {assistants.map(assistant => (
-                  <option key={assistant.id} value={assistant.id}>
-                    {assistant.name}
-                  </option>
-                ))}
-              </select>
+            <div className="modal-content">
+              <div className="modal-field">
+                <label htmlFor="modal-session-title">Chat Title:</label>
+                <input 
+                  id="modal-session-title"
+                  type="text" 
+                  value={modalSessionTitle} 
+                  onChange={(e) => setModalSessionTitle(e.target.value)} 
+                  placeholder="New Chat"
+                />
+              </div>
+              <div className="modal-field">
+                <label htmlFor="assistant-select-modal">Coach:</label>
+                <select 
+                  id="assistant-select-modal"
+                  value={selectedAssistant}
+                  onChange={(e) => setSelectedAssistant(e.target.value)}
+                >
+                  {assistants.map(assistant => (
+                    <option key={assistant.id} value={assistant.id}>
+                      {assistant.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="modal-field">
+                <label>Goals:</label>
+                <div className="goals-multiselect">
+                  {Object.entries(groupedGoals).map(([category, categoryGoals]) => (
+                    <div key={category} className="goals-category">
+                      <div className="category-label">{category}</div>
+                      <div className="category-chips">
+                        {categoryGoals.map(goal => (
+                          <div
+                            key={goal.id}
+                            className={`goal-chip ${selectedGoals.includes(goal.id) ? 'selected' : ''}`}
+                            onClick={() => {
+                              setSelectedGoals(prev => 
+                                prev.includes(goal.id)
+                                  ? prev.filter(id => id !== goal.id)
+                                  : [...prev, goal.id]
+                              );
+                            }}
+                            title={goal.short_desc}
+                          >
+                            {goal.name}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
             <div className="modal-buttons">
               <button 
@@ -338,13 +400,14 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
                 {loadingStates.creating ? (
                   <div className="button-spinner"></div>
                 ) : (
-                  'Create Chat'
+                  'Create'
                 )}
               </button>
               <button 
                 onClick={() => {
                   setShowAssistantSelection(false);
                   setModalSessionTitle("");
+                  setSelectedGoals([]);
                   setIsCreatingNewSession(false);
                 }}
                 disabled={loadingStates.creating}

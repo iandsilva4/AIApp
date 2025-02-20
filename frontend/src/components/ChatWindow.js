@@ -22,6 +22,7 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
   const [isEndingSession, setIsEndingSession] = useState(false);
   const [currentAssistant, setCurrentAssistant] = useState(null);
   const [availableAssistants, setAvailableAssistants] = useState([]);
+  const [availableGoals, setAvailableGoals] = useState([]);
 
   // Reset textarea height
   const resetTextareaHeight = () => {
@@ -267,30 +268,89 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
     fetchAssistants();
   }, [user]);
 
-  // Replace the existing renderStartingNewChat function with this new version
+  // Add this new useEffect after the existing fetchAssistants useEffect
+  useEffect(() => {
+    const fetchGoals = async () => {
+      if (!user) return;
+      
+      try {
+        const token = await user.getIdToken();
+        const response = await axios.get(
+          `${process.env.REACT_APP_BACKEND_URL}/goals`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setAvailableGoals(response.data);
+      } catch (error) {
+        console.error("Failed to fetch goals:", error);
+        setErrorMessage("Failed to load goals.");
+      }
+    };
+
+    fetchGoals();
+  }, [user]);
+
+  // Replace the existing renderStartingNewChat function with this updated version
   const renderStartingNewChat = () => (
     <div className="welcome-message assistants-grid">
-      <h2>Coaches</h2>
-      <div className="assistants-list">
-        {availableAssistants.map((assistant) => (
-          <div key={assistant.id} className="assistant-card">
-            <div className="assistant-avatar">
-              {assistant.avatar_url ? (
-                <img src={assistant.avatar_url} alt={assistant.name} />
-              ) : (
-                <div className="assistant-initial">
-                  {(assistant.name?.[0] || 'A').toUpperCase()}
-                </div>
-              )}
-            </div>
-            <h3>{assistant.name}</h3>
-            <p>{assistant.short_desc}</p>
-          </div>
-        ))}
-        {availableAssistants.length === 0 && (
+      {(!user || (!availableAssistants.length && !availableGoals.length)) ? (
+        <div className="loading-container">
           <div className="loading-spinner"></div>
-        )}
-      </div>
+          <p>Loading...</p>
+        </div>
+      ) : (
+        <>
+          <h2>Coaches</h2>
+          <div className="assistants-list">
+            {availableAssistants.map((assistant) => (
+              <div key={assistant.id} className="assistant-card">
+                <div className="assistant-avatar">
+                  {assistant.avatar_url ? (
+                    <img src={assistant.avatar_url} alt={assistant.name} />
+                  ) : (
+                    <div className="assistant-initial">
+                      {(assistant.name?.[0] || 'A').toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <h3>{assistant.name}</h3>
+                <p>{assistant.short_desc}</p>
+              </div>
+            ))}
+            {availableAssistants.length === 0 && (
+              <div className="loading-spinner"></div>
+            )}
+          </div>
+
+          <h2>Goals</h2>
+          <div className="assistants-list">
+            {availableGoals
+              .sort((a, b) => a.id === 1 ? 1 : b.id === 1 ? -1 : 0)
+              .map((goal) => (
+                <div key={goal.id} className="goal-container">
+                  <div className="category-tag" data-category={goal.category?.toLowerCase().replace(/\s+/g, '-')}>
+                    {goal.category}
+                  </div>
+                  <div className="assistant-card">
+                    <div className="assistant-avatar">
+                      {goal.icon_url ? (
+                        <img src={goal.icon_url} alt={goal.name} />
+                      ) : (
+                        <div className="assistant-initial">
+                          {(goal.name?.[0] || 'G').toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <h3>{goal.name}</h3>
+                    <p>{goal.short_desc || "Category"}</p>
+                  </div>
+                </div>
+              ))}
+            {availableGoals.length === 0 && (
+              <div className="loading-spinner"></div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 
@@ -328,7 +388,7 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
       )}
       
       <div className="messages" ref={messagesEndRef}>
-        {isCreatingNewSession ? (
+        {isCreatingNewSession && user ? (
           renderStartingNewChat()
         ) : !activeSession ? (
           <div className="welcome-message">
