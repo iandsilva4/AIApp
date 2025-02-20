@@ -37,6 +37,7 @@ def create_session(user_email):
         logger.info(f"[User: {user_email}] Received request to create new session")
         data = request.json
         title = data.get("title", "Untitled Chat").strip()
+        goal_ids = data.get("goal_ids") or [1]  # Default to [1] if goal_ids is empty/None
         
         if not title:
             return jsonify({"error": "Session title cannot be empty"}), 400
@@ -67,17 +68,26 @@ def create_session(user_email):
         for session in active_sessions:
             session.is_ended = True
         
-        # Create new session with the selected assistant
+        # Create new session with the selected assistant and goals
         assistant_id = data.get("assistant_id", 1)
-        session = ChatSession(user_email=user_email, title=title, messages=json.dumps([]), summary="", assistant_id=assistant_id)
+        session = ChatSession(
+            user_email=user_email, 
+            title=title, 
+            messages=json.dumps([]), 
+            summary="", 
+            assistant_id=assistant_id,
+            goal_ids=goal_ids  # Direct array assignment, no JSON needed
+        )
+        
         db.session.add(session)
         db.session.commit()
 
-        # Generate AI response
+        # Generate AI response with goals context
         ai_message = generate_ai_response(
             messages=[],
             user_email=user_email,
-            assistant_id=assistant_id
+            assistant_id=assistant_id,
+            goal_ids=goal_ids  # Pass goals to the AI service
         )
 
         # Save AI's first message
@@ -383,8 +393,13 @@ def get_goals(user_email):
     """
     try:
         goals = Goals.query.filter(
-            Goals.created_by == user_email
+            Goals.is_globally_hidden == False,
+            db.or_(
+                Goals.created_by == 'admin',
+                Goals.created_by == user_email
+            )
         ).order_by(Goals.id).all()
+        
         result = []
         for goal in goals:
             result.append({
