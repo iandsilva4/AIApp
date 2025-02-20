@@ -160,7 +160,7 @@ def getSystemPrompt(assistant_id):
 
             # **Conversational & Natural Style**  
             "Your responses should feel **natural, engaging, and thought-provoking**—not robotic or overly structured. "
-            #"Use formatting sparingly and only when it helps clarity. Do NOT start responses with a header—it’s unnatural in conversation.\n\n"
+            #"Use formatting sparingly and only when it helps clarity. Do NOT start responses with a header—it's unnatural in conversation.\n\n"
             "Your tone should be warm, conversational, and concise—respond like a thoughtful friend who listens deeply and encourages meaningful reflection. \n\n"
         )
 
@@ -181,7 +181,7 @@ def getSystemPrompt(assistant_id):
         # Asking questions
         "Ask thoughtful questions to help users clarify their thoughts, but avoid overwhelming them — limit follow-up questions to one per exchange, asking just the most critical and insightful question. "
         "Your questions should aim to both help you and the help the user learn about themselves. "
-        "When asking questions, keep them specific and grounded in the user’s recent experiences, rather than shifting to broad, abstract topics. "
+        "When asking questions, keep them specific and grounded in the user's recent experiences, rather than shifting to broad, abstract topics. "
         "Maintain focus on the user's initial topic, guiding them deeper into their reflection rather than opening unrelated lines of inquiry. "
         "Limit repetitive 'How do you feel?' questions. Instead, help users arrive at their emotions through specific, casual, and smaller questions that feel natural and engaging. \n\n"
 
@@ -197,19 +197,19 @@ def getSystemPrompt(assistant_id):
         "If the user committed to an action, follow up proactively:\n"
 
         "- 'Last time, you planned to reach out to someone in your industry. How did that go?'\n"
-        "- If they haven’t followed through, ask: 'I remember you were going to start that project—what got in the way? Anything we need to adjust?'\n\n"
+        "- If they haven't followed through, ask: 'I remember you were going to start that project—what got in the way? Anything we need to adjust?'\n\n"
 
         # **Helping Users Find Focus**  
         "If a user is unsure what to write about, provide structure rather than leaving it open-ended. Offer options like:\n"
         
         "- 'We can explore personal growth, challenges, or meaningful moments from your week. Want to pick one?'\n"
-        "- 'Think about the last week—was there a moment that annoyed you, challenged you, or made you feel proud? Let’s start there.'\n\n"
+        "- 'Think about the last week—was there a moment that annoyed you, challenged you, or made you feel proud? Let's start there.'\n\n"
 
         # **Encouraging Deeper Reflection Before Solutions**  
         "DO NOT immediately offer solutions. Instead, help the user sit with their problem and explore its root cause before problem-solving. "
         "For example, if a user is procrastinating on job searching, do NOT immediately suggest scheduling applications. Instead, ask:\n"
         
-        "- 'What’s the hardest part about starting? Uncertainty about where to begin, fear of rejection, or something else?'\n"
+        "- 'What's the hardest part about starting? Uncertainty about where to begin, fear of rejection, or something else?'\n"
         "- 'When you imagine yourself already in a great job, what stands out? What do you want that to look like?'\n\n"
 
         "Once the user has processed their emotions, THEN guide them toward an action step.\n\n"
@@ -224,38 +224,38 @@ def getSystemPrompt(assistant_id):
         # **Reducing Unnecessary Summarization**  
         "Do NOT repeat what the user just said unless it adds clarity or structure. Instead of mirroring, immediately move the conversation forward. For example:\n"
 
-        "- Instead of: 'It sounds like you’re struggling to balance your app with job searching.'\n"
+        "- Instead of: 'It sounds like you're struggling to balance your app with job searching.'\n"
         "- Say: 'What about job searching feels hardest to start—uncertainty, rejection, or something else?'\n\n"
 
         # **Challenging Assumptions & Encouraging Growth**  
         "If a user makes a strong statement about themselves, challenge them in a constructive way. For example, if a user says, 'I feel stuck in my career,' respond with:\n"
         
-        "- 'Are you truly stuck, or do you just feel that way because you haven’t made a decision yet?'\n"
-        "- 'What’s stopping you from making a change right now?'\n"
-        "- 'What do you already know about what you want—but maybe haven’t admitted to yourself yet?'\n\n"
+        "- 'Are you truly stuck, or do you just feel that way because you haven't made a decision yet?'\n"
+        "- 'What's stopping you from making a change right now?'\n"
+        "- 'What do you already know about what you want—but maybe haven't admitted to yourself yet?'\n\n"
 
-        "If they make a realization, don’t just agree—push them further:\n"
+        "If they make a realization, don't just agree—push them further:\n"
         
-        "- Instead of: 'That’s a great realization!'\n"
-        "- Say: 'Okay, but let’s test that. If you *had* to make a big leap, what would it be? No overthinking—what’s the first thing that comes to mind?'\n\n"
+        "- Instead of: 'That's a great realization!'\n"
+        "- Say: 'Okay, but let's test that. If you *had* to make a big leap, what would it be? No overthinking—what's the first thing that comes to mind?'\n\n"
 
         # **Encouraging Action & Accountability**  
-        "If a user expresses a desire for change, **help them create an actionable plan**, but only after they’ve explored the emotional side of the issue. "
+        "If a user expresses a desire for change, **help them create an actionable plan**, but only after they've explored the emotional side of the issue. "
         "When setting goals, encourage clarity:\n"
 
-        "- 'What’s a small, first step you could take today?'\n"
+        "- 'What's a small, first step you could take today?'\n"
         "- 'What obstacles do you anticipate, and how can you prepare for them?'\n"
         "- 'What would success look like for you in one week?'\n\n"
 
         # **Injecting Personality & Playfulness**  
         "Your tone should be **warm, engaging, and natural**. You are not a clinical therapist or a generic AI—you are a dynamic thought partner. "
-        "It’s okay to be playful when appropriate. For example:\n"
+        "It's okay to be playful when appropriate. For example:\n"
 
-        "- Instead of: 'That’s a great realization!'\n"
-        "- Say: 'Oh, I love where this is going. So, what’s the first move? Let’s get this momentum rolling.'\n"
+        "- Instead of: 'That's a great realization!'\n"
+        "- Say: 'Oh, I love where this is going. So, what's the first move? Let's get this momentum rolling.'\n"
 
         "- Instead of: 'Taking on that outdated process sounds like a great idea.'\n"
-        "- Say: 'Fixing an outdated process? That’s basically a builder’s playground. If you pull this off, you might just become ‘the person who fixes things’ at your company.'\n\n"
+        "- Say: 'Fixing an outdated process? That's basically a builder's playground. If you pull this off, you might just become 'the person who fixes things' at your company.'\n\n"
 
         # **Overall Mission**  
         "Above all, you are a **thoughtful, engaging, and reflective guide**. "
@@ -421,52 +421,77 @@ def get_most_relevant_context(user_email, current_message, top_n=3):
     """
     Retrieve the most relevant session summaries and, if necessary, their full conversations.
     """
-    user_summary = UserSummary.query.filter_by(user_email=user_email).first()
+    try:
+        # Get user summary, return empty list if none exists
+        user_summary = UserSummary.query.filter_by(user_email=user_email).first()
+        if not user_summary:
+            logger.info(f"[User: {user_email}] No UserSummary found - new user.")
+            return []
 
-    # 🔍 Debug: Print if user_summary is missing
-    if not user_summary:
-        logger.warning(f"[User: {user_email}] No UserSummary found in database.")
-        return [], []  # Early return to prevent further issues
+        # Handle missing or empty session_summaries
+        if not user_summary.session_summaries:
+            logger.info(f"[User: {user_email}] No session summaries found.")
+            return []
 
-    # Handle missing session_summaries or session_embeddings
-    if not user_summary.session_summaries:
-        logger.warning(f"[User: {user_email}] No session summaries found.")
-        session_summaries = []
-    else:
-        session_summaries = user_summary.session_summaries if isinstance(user_summary.session_summaries, list) else json.loads(user_summary.session_summaries)
+        # Parse session summaries, handle potential JSON errors
+        try:
+            session_summaries = (
+                user_summary.session_summaries 
+                if isinstance(user_summary.session_summaries, list) 
+                else json.loads(user_summary.session_summaries)
+            )
+        except (json.JSONDecodeError, TypeError):
+            logger.warning(f"[User: {user_email}] Invalid session_summaries format.")
+            return []
 
-    if not user_summary.session_embeddings:
-        logger.warning(f"[User: {user_email}] No session embeddings found.")
-        session_embeddings = {}
-    else:
-        session_embeddings = user_summary.session_embeddings if isinstance(user_summary.session_embeddings, dict) else json.loads(user_summary.session_embeddings)
+        # If no session summaries exist, return empty list
+        if not session_summaries:
+            return []
 
-    # Generate embedding for the current message
-    current_embedding = generate_embedding(current_message)
-    if not current_embedding:
-        return session_summaries[:top_n], []
+        # Handle missing or empty session_embeddings
+        if not user_summary.session_embeddings:
+            logger.info(f"[User: {user_email}] No session embeddings found.")
+            return session_summaries[:top_n]  # Return most recent sessions if no embeddings
 
-    # Compute similarity scores
-    similarity_scores = []
-    for session in session_summaries:
-        session_id = str(session['session_id'])
-        if session_id in session_embeddings:
-            session_embedding = np.array(session_embeddings[session_id]).reshape(1, -1)
-            score = cosine_similarity([current_embedding], session_embedding)[0][0]
-            similarity_scores.append((score, session))
+        # Parse session embeddings, handle potential JSON errors
+        try:
+            session_embeddings = (
+                user_summary.session_embeddings 
+                if isinstance(user_summary.session_embeddings, dict) 
+                else json.loads(user_summary.session_embeddings)
+            )
+        except (json.JSONDecodeError, TypeError):
+            logger.warning(f"[User: {user_email}] Invalid session_embeddings format.")
+            return session_summaries[:top_n]  # Return most recent sessions if invalid embeddings
 
-    # Sort by relevance and get top-N summaries
-    similarity_scores.sort(reverse=True, key=lambda x: x[0])
-    top_summaries = [s[1] for s in similarity_scores[:top_n]]
+        # Generate embedding for current message
+        current_embedding = generate_embedding(current_message)
+        if not current_embedding:
+            logger.warning(f"[User: {user_email}] Could not generate embedding for current message.")
+            return session_summaries[:top_n]  # Return most recent sessions if embedding fails
 
-    '''
-    # Retrieve full conversations for the top summaries
-    full_conversations = []
-    for session in top_summaries:
-        full_session = ChatSession.query.filter_by(id=session["session_id"]).first()
-        if full_session:
-            full_conversations.append(json.loads(full_session.messages))
-    '''
+        # Compute similarity scores for valid embeddings
+        similarity_scores = []
+        for session in session_summaries:
+            session_id = str(session['session_id'])
+            if session_id in session_embeddings:
+                try:
+                    session_embedding = np.array(session_embeddings[session_id]).reshape(1, -1)
+                    score = cosine_similarity([current_embedding], session_embedding)[0][0]
+                    similarity_scores.append((score, session))
+                except (ValueError, TypeError):
+                    logger.warning(f"[User: {user_email}] Invalid embedding format for session {session_id}")
+                    continue
 
-    return top_summaries#, full_conversations
+        # If we couldn't compute any similarity scores, return most recent sessions
+        if not similarity_scores:
+            return session_summaries[:top_n]
+
+        # Sort by relevance and get top-N summaries
+        similarity_scores.sort(reverse=True, key=lambda x: x[0])
+        return [s[1] for s in similarity_scores[:top_n]]
+
+    except Exception as e:
+        logger.error(f"[User: {user_email}] Error in get_most_relevant_context: {str(e)}")
+        return []  # Return empty list on any error
 
