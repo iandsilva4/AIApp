@@ -113,7 +113,14 @@ def generate_ai_response(messages, user_email, assistant_id=None):
         # Step 8: Assemble messages in correct order (system → user summary → past summaries → current session)
         messages_list = system_messages + user_summary_messages + past_summaries + current_session_messages
         
-        if not current_session_messages:
+
+
+        if not current_session_messages and not user_summary_messages:
+            messages_list.append({
+                "role": "system", 
+                "content": "This is your first ever session with them. Say hello!"
+            })
+        elif not current_session_messages:
             messages_list.append({
                 "role": "system", 
                 "content": "This is a new session. Say hello!"
