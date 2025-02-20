@@ -270,7 +270,7 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
   // Replace the existing renderStartingNewChat function with this new version
   const renderStartingNewChat = () => (
     <div className="welcome-message assistants-grid">
-      <h2>Our Assistants</h2>
+      <h2>Coaches</h2>
       <div className="assistants-list">
         {availableAssistants.map((assistant) => (
           <div key={assistant.id} className="assistant-card">
@@ -303,7 +303,7 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
           </button>
         )}
         <div className="header-title">
-          <span>Chat with {currentAssistant?.assistant_name || 'AI Assistant'}</span>
+          <span>Chat with {currentAssistant?.assistant_name || 'a Coach'}</span>
         </div>
         {activeSession && !getCurrentSession()?.is_ended && (
           <button 
@@ -332,7 +332,7 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
           renderStartingNewChat()
         ) : !activeSession ? (
           <div className="welcome-message">
-            <h2>Welcome to your AI Assistant!<span className="welcome-emoji">👋</span></h2>
+            <h2>Welcome to your AI Coach!<span className="welcome-emoji">👋</span></h2>
             <div className="welcome-steps">
               <p>Get started in 3 simple steps:</p>
               <ol>
