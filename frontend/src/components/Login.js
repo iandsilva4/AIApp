@@ -50,18 +50,16 @@ const Login = ({ setUser }) => {
       </div>
       
       <div className="landing-content">
-        {/* Hero Section */}
         <div className="hero-section">
           <h1>Your AI Life Coach for Deep, Personalized Conversations</h1>
           <p className="hero-subtitle">
             An AI that truly knows you—helping you reflect, grow, and gain clarity through meaningful sessions.
           </p>
           <button className="google-login-button" onClick={handleLogin}>
-            <FaGoogle className="google-icon" /> Start Your Journey
+            <FaGoogle className="google-icon" /> Sign in With Google
           </button>
         </div>
   
-        {/* Features Section */}
         <div className="features-section">
           <div className="feature-card">
             <FaBrain className="feature-icon" />
