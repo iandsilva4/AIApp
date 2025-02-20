@@ -486,7 +486,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   height: 100%;
   text-align: center;
   padding: 20px;
@@ -498,28 +498,19 @@
   perspective: 1000px;
   perspective-origin: center;
   border-radius: 12px;
-  overflow: hidden;
-}
-
-/* Add this before pseudo-element for the gradient overlay */
-.welcome-message::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  box-sizing: border-box;
   background: 
-    radial-gradient(circle at 20% 30%, rgba(41, 196, 255, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 80% 70%, rgba(255, 41, 230, 0.12) 0%, transparent 50%);
-  pointer-events: none;
-  animation: gradientShift 15s infinite;
+  radial-gradient(circle at 20% 30%, rgba(41, 196, 255, 0.15) 0%, transparent 50%),
+  radial-gradient(circle at 80% 70%, rgba(255, 41, 230, 0.12) 0%, transparent 50%);
 }
 
 /* Update welcome-steps to have proper z-index and background */
 .welcome-steps {
   position: relative;
   z-index: 1;
+  width: 100%;
   max-width: 400px;
   text-align: left;
   background: rgba(255, 255, 255, 0.7);
@@ -528,6 +519,7 @@
   border-radius: 12px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 20px auto;
 }
 
 /* Update welcome message title */
@@ -755,7 +747,6 @@
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
-  overflow: hidden;
 }
 
 .assistant-card {
@@ -837,26 +828,14 @@
   perspective: 1000px;
   perspective-origin: center;
   border-radius: 12px;
-  overflow: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   padding: 40px 20px;
   box-sizing: border-box;
-}
-
-/* Add grid background */
-.welcome-message.assistants-grid::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   background: 
-    radial-gradient(circle at 20% 30%, rgba(41, 196, 255, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 80% 70%, rgba(255, 41, 230, 0.12) 0%, transparent 50%);
-  pointer-events: none;
-  animation: gradientShift 15s infinite;
+  radial-gradient(circle at 20% 30%, rgba(41, 196, 255, 0.15) 0%, transparent 50%),
+  radial-gradient(circle at 80% 70%, rgba(255, 41, 230, 0.12) 0%, transparent 50%);
 }
 
 /* Add keyframes if they don't exist */
@@ -870,4 +849,29 @@
   0% { filter: hue-rotate(0deg); }
   50% { filter: hue-rotate(180deg); }
   100% { filter: hue-rotate(360deg); }
+}
+
+/* Add scrollbar styling for welcome message */
+.welcome-message::-webkit-scrollbar {
+  width: 8px;
+  opacity: 0;
+  transition: width 0.3s ease-in-out;
+}
+
+.welcome-message::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.welcome-message::-webkit-scrollbar-thumb {
+  background-color: rgba(225, 225, 225, 0.7);
+  border-radius: 4px;
+  transition: background-color 0.3s ease-in-out;
+}
+
+.welcome-message:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(150, 150, 150, 0.9);
+}
+
+.welcome-message::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(120, 120, 120, 1);
 }

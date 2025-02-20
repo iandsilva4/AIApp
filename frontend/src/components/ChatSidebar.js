@@ -317,7 +317,7 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
               />
             </div>
             <div>
-              <label htmlFor="assistant-select-modal">Assistant:</label>
+              <label htmlFor="assistant-select-modal">Coach:</label>
               <select 
                 id="assistant-select-modal"
                 value={selectedAssistant}
