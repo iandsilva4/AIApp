@@ -78,7 +78,9 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
 
   // NEW: Fetch available assistants from the backend
   useEffect(() => {
-    const fetchGoalsAndAssistants = async () => {
+    const fetchGoalsAndAssistants = async (retryCount = 0) => {
+      if (!user) return;
+
       try {
         const token = await user.getIdToken();
         const [assistantsRes, goalsRes] = await Promise.all([
@@ -98,17 +100,26 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
         if (assistantsRes.data?.length > 0) {
           setSelectedAssistant(assistantsRes.data[0].id);
         }
-
-        console.log('Fetched goals:', goalsRes.data);
-        console.log('Fetched assistants:', assistantsRes.data);
       } catch (err) {
-        console.error("Failed to fetch assistants and goals", err);
-        setError("Failed to load assistants and goals");
+        console.error("Failed to fetch assistants and goals:", err);
+        
+        // If we get a 401 and haven't exceeded retries, try again after a delay
+        if (err.response?.status === 401 && retryCount < 3) {
+          console.log(`Retrying fetch goals and assistants (attempt ${retryCount + 1})...`);
+          setTimeout(() => {
+            fetchGoalsAndAssistants(retryCount + 1);
+          }, 1000); // Wait 1 second before retrying
+        } else {
+          setError("Failed to load goals and assistants");
+        }
       }
     };
     
     if (user) {
-      fetchGoalsAndAssistants();
+      // Add small initial delay to allow Firebase to fully initialize
+      setTimeout(() => {
+        fetchGoalsAndAssistants();
+      }, 500);
     }
   }, [user]);
 

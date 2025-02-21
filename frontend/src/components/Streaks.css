@@ -1,0 +1,38 @@
+.streak-section {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  overflow-x: auto;
+}
+
+.streak-section h3 {
+  margin: 0 0 16px 0;
+  color: #24292f;
+}
+
+.streak-cards {
+  display: flex;
+  gap: 24px;
+}
+
+.streak-card {
+  flex: 1;
+  background: #f6f8fa;
+  border-radius: 6px;
+  padding: 16px;
+  text-align: center;
+  border: 1px solid #d0d7de;
+}
+
+.streak-number {
+  display: block;
+  font-size: 32px;
+  font-weight: bold;
+  color: #218bff;
+  margin-bottom: 8px;
+}
+
+.streak-label {
+  color: #57606a;
+  font-size: 14px;
+} 
