@@ -118,6 +118,42 @@ body, html {
   color: #555; /* Dark gray text */
 }
 
+/* Add these styles after the header styles */
+
+.header-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.dashboard-button {
+  padding: 8px 16px;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dashboard-button:hover {
+  background-color: #357abd;
+  transform: translateY(-1px);
+}
+
+.dashboard-button:active {
+  transform: translateY(0px);
+}
+
+.button-icon {
+  font-size: 18px;
+}
+
 /* Content container (Sidebar + Chat Window) */
 .app-content {
   display: flex;
@@ -224,6 +260,19 @@ body, html {
 
   .app-content.show-chat .chat-window-container {
     transform: translateX(0);
+  }
+
+  .header-buttons {
+    gap: 8px;
+  }
+
+  .dashboard-button {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+
+  .button-icon {
+    font-size: 16px;
   }
 }
 

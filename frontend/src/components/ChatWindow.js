@@ -247,9 +247,9 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
     }
   }, [activeSession, sessions, getCurrentSession]);
 
-  // Add this new useEffect to fetch assistants
+  // Update the assistants fetch useEffect
   useEffect(() => {
-    const fetchAssistants = async () => {
+    const fetchAssistants = async (retryCount = 0) => {
       if (!user) return;
       
       try {
@@ -261,16 +261,30 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
         setAvailableAssistants(response.data);
       } catch (error) {
         console.error("Failed to fetch assistants:", error);
-        setErrorMessage("Failed to load assistants.");
+        
+        // If we get a 401 and haven't exceeded retries, try again after a delay
+        if (error.response?.status === 401 && retryCount < 3) {
+          console.log(`Retrying fetch assistants (attempt ${retryCount + 1})...`);
+          setTimeout(() => {
+            fetchAssistants(retryCount + 1);
+          }, 1000);
+        } else {
+          setErrorMessage("Failed to load assistants");
+        }
       }
     };
 
-    fetchAssistants();
+    if (user) {
+      // Add small initial delay to allow Firebase to fully initialize
+      setTimeout(() => {
+        fetchAssistants();
+      }, 500);
+    }
   }, [user]);
 
-  // Add this new useEffect after the existing fetchAssistants useEffect
+  // Update the goals fetch useEffect
   useEffect(() => {
-    const fetchGoals = async () => {
+    const fetchGoals = async (retryCount = 0) => {
       if (!user) return;
       
       try {
@@ -282,11 +296,25 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
         setAvailableGoals(response.data);
       } catch (error) {
         console.error("Failed to fetch goals:", error);
-        setErrorMessage("Failed to load goals.");
+        
+        // If we get a 401 and haven't exceeded retries, try again after a delay
+        if (error.response?.status === 401 && retryCount < 3) {
+          console.log(`Retrying fetch goals (attempt ${retryCount + 1})...`);
+          setTimeout(() => {
+            fetchGoals(retryCount + 1);
+          }, 1000);
+        } else {
+          setErrorMessage("Failed to load goals");
+        }
       }
     };
 
-    fetchGoals();
+    if (user) {
+      // Add small initial delay to allow Firebase to fully initialize
+      setTimeout(() => {
+        fetchGoals();
+      }, 500);
+    }
   }, [user]);
 
   // Replace the existing renderStartingNewChat function with this updated version

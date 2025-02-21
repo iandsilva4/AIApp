@@ -7,7 +7,7 @@ from app.services.ai_service import generate_ai_response, generateSessionSummary
 from app.utils.decorators import authenticate
 from app.__init__ import db
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import logging
 
 logger = logging.getLogger(__name__)
@@ -417,3 +417,104 @@ def get_goals(user_email):
     except Exception as e:
         logger.error(f"Failed to retrieve goals: {e}")
         return jsonify({"error": "Failed to retrieve goals"}), 500
+
+@chat_bp.route('/sessions/stats', methods=['GET'])
+@authenticate
+def get_session_stats(user_email):
+    try:
+        # Get all non-deleted sessions
+        sessions = ChatSession.query.filter_by(
+            user_email=user_email,
+            is_deleted=False
+        ).order_by(ChatSession.timestamp.desc()).all()
+
+        # Initialize contribution data
+        contributions = {}
+        for session in sessions:
+            # Return UTC timestamp for frontend to handle timezone conversion
+            date_str = session.timestamp.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+            
+            # Store in contributions using UTC date as key
+            utc_date = session.timestamp.strftime('%Y-%m-%d')
+            year = session.timestamp.year
+            
+            if year not in contributions:
+                contributions[year] = {}
+            
+            if utc_date not in contributions[year]:
+                contributions[year][utc_date] = {
+                    'count': 0,
+                    'timestamps': []
+                }
+            
+            contributions[year][utc_date]['count'] += 1
+            contributions[year][utc_date]['timestamps'].append(date_str)
+
+        # Calculate streaks
+        today = datetime.now(timezone.utc)
+        current_date = today
+        daily_streak = 0
+        weekly_streak = 0
+        monthly_streak = 0
+
+        # Daily streak
+        while True:
+            date_str = current_date.strftime('%Y-%m-%d')
+            year = current_date.year
+            if not contributions.get(year, {}).get(date_str):
+                break
+            daily_streak += 1
+            current_date = current_date - timedelta(days=1)
+
+        # Weekly streak
+        current_date = today
+        current_week = current_date.isocalendar()[1]
+        current_year = current_date.year
+
+        while True:
+            # Check if there's any session in this week
+            has_sessions = False
+            for session in sessions:
+                if (session.timestamp.isocalendar()[1] == current_week and 
+                    session.timestamp.year == current_year):
+                    has_sessions = True
+                    break
+            
+            if not has_sessions:
+                break
+                
+            weekly_streak += 1
+            current_week -= 1
+            if current_week == 0:
+                current_year -= 1
+                current_week = datetime(current_year, 12, 28).isocalendar()[1]
+
+        # Monthly streak
+        current_date = today
+        while True:
+            # Check if there's any session in this month
+            has_sessions = False
+            for session in sessions:
+                if (session.timestamp.month == current_date.month and 
+                    session.timestamp.year == current_date.year):
+                    has_sessions = True
+                    break
+            
+            if not has_sessions:
+                break
+                
+            monthly_streak += 1
+            current_date = current_date.replace(day=1) - timedelta(days=1)  # Go to previous month
+
+        return jsonify({
+            'contributions': contributions,
+            'streaks': {
+                'daily': daily_streak,
+                'weekly': weekly_streak,
+                'monthly': monthly_streak
+            }
+        }), 200
+
+    except Exception as e:
+        logger.error(f"[User: {user_email}] Stats Retrieval Error: {e}")
+        return jsonify({"error": "Failed to load stats"}), 500
