@@ -3,7 +3,8 @@ from app.models.chat_session import ChatSession
 from app.models.user_summary import UserSummary
 from app.models.assistant import Assistant
 from app.models.goals import Goals
-from app.services.ai_service import generate_ai_response, generateSessionSummary, generateUserSummary, generate_embedding
+from app.models.session_sentiments import SessionSentiments
+from app.services.ai_service import generate_ai_response, generateSessionSummary, generateUserSummary, generate_embedding, analyze_sentiment
 from app.utils.decorators import authenticate
 from app.__init__ import db
 import json
@@ -162,6 +163,14 @@ def toggle_archive_session(user_email, session_id):
         if not session:
             return jsonify({'error': 'Session not found'}), 404
 
+        # If we're archiving (not unarchiving), generate sentiment
+        if not session.is_archived:
+            try:
+                generate_session_sentiment(user_email, session_id)
+            except Exception as e:
+                logger.error(f"[User: {user_email}] Error generating sentiment for session {session_id}: {e}")
+                # Continue with archiving even if sentiment generation fails
+
         # Generate summary from messages
         messages = json.loads(session.messages)
         if not session.summary:
@@ -192,6 +201,14 @@ def end_session(user_email, session_id):
         session = ChatSession.query.filter_by(id=session_id, user_email=user_email).first()
         if not session:
             return jsonify({'error': 'Session not found'}), 404
+
+        # Generate sentiment analysis for the session
+        try:
+            logger.info(f"[User: {user_email}] Generating sentiment for session {session_id}")
+            _generate_session_sentiment(user_email, session_id)
+        except Exception as e:
+            logger.error(f"[User: {user_email}] Error generating sentiment for session {session_id}: {e}")
+            # Continue with ending session even if sentiment generation fails
 
         # Generate summary from messages
         messages = json.loads(session.messages)
@@ -518,3 +535,126 @@ def get_session_stats(user_email):
     except Exception as e:
         logger.error(f"[User: {user_email}] Stats Retrieval Error: {e}")
         return jsonify({"error": "Failed to load stats"}), 500
+
+@chat_bp.route('/session_sentiments/<int:session_id>', methods=['GET'])
+@authenticate
+def get_session_sentiments(user_email, session_id):
+    """
+    Retrieve sentiment data for a specific chat session.
+    """
+    print(f"User email: {user_email}, Session ID: {session_id}")
+    try:
+        # Verify the session belongs to the user
+        session = ChatSession.query.filter_by(id=session_id, user_email=user_email).first()
+        if not session:
+            return jsonify({"error": "Session not found or unauthorized"}), 404
+
+        # Get sentiment records for the session
+        sentiments = SessionSentiments.query.filter_by(
+            session_id=session_id,
+            user_email=user_email
+        ).order_by(SessionSentiments.created_at).all()
+
+        result = []
+        for sentiment in sentiments:
+            result.append(sentiment.to_dict())
+
+        return jsonify(result), 200
+
+    except Exception as e:
+        logger.error(f"[User: {user_email}] Session Sentiments Retrieval Error: {e}")
+        return jsonify({"error": "Failed to retrieve session sentiments"}), 500
+        
+
+def _generate_session_sentiment(user_email, session_id):
+    """
+    Helper function to generate and store sentiment analysis for a chat session.
+    Only analyzes user messages, ignoring system and assistant messages.
+    """
+    # Verify the session belongs to the user
+    session = ChatSession.query.filter_by(id=session_id, user_email=user_email).first()
+    if not session:
+        raise ValueError("Session not found or unauthorized")
+
+    # Get messages from session
+    messages = json.loads(session.messages)
+    if not messages:
+        raise ValueError("No messages found in session")
+
+    # Extract only user messages
+    user_messages = [msg.get('content', '') for msg in messages if msg.get('role') == 'user']
+    if not user_messages:
+        raise ValueError("No user messages found in session")
+
+    # Combine user messages and analyze sentiment
+    message_text = " ".join(user_messages)
+    sentiment_scores = analyze_sentiment(message_text)
+    
+    # Create new sentiment record
+    sentiment = SessionSentiments(
+        user_email=user_email,
+        session_id=session_id,
+        sentiment=sentiment_scores['sentiment'],
+        sentiment_score=sentiment_scores['sentiment_score'],
+        created_at=datetime.now(timezone.utc),
+        updated_at=datetime.now(timezone.utc)
+    )
+
+    db.session.add(sentiment)
+    db.session.commit()
+    
+    return sentiment
+
+@chat_bp.route('/session_sentiments/<int:session_id>', methods=['POST'])
+@authenticate
+def generate_session_sentiment(user_email, session_id):
+    """
+    Route handler for generating session sentiment.
+    """
+    try:
+        sentiment = _generate_session_sentiment(user_email, session_id)
+        return jsonify(sentiment.to_dict()), 201
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 404
+    except Exception as e:
+        logger.error(f"[User: {user_email}] Session Sentiment Generation Error: {e}")
+        db.session.rollback()
+        return jsonify({"error": "Failed to generate session sentiment"}), 500
+
+@chat_bp.route('/user_sentiments', methods=['GET'])
+@authenticate
+def get_user_sentiments(user_email):
+    """
+    Retrieve all sentiment data for a user.
+    """
+    try:
+        # Get all sentiment records for the user with their associated session timestamps
+        sentiments = SessionSentiments.query\
+            .join(ChatSession, SessionSentiments.session_id == ChatSession.id)\
+            .filter(
+                SessionSentiments.user_email == user_email,
+                ChatSession.is_deleted == False,
+                ChatSession.is_archived == False
+            )\
+            .order_by(ChatSession.timestamp.desc())\
+            .all()  # Get latest first
+
+        print(f"Found {len(sentiments)} sentiment records for user {user_email}")  # Debug log
+
+        result = []
+        for sentiment in sentiments:
+            # Get the associated chat session
+            session = ChatSession.query.get(sentiment.session_id)
+            result.append({
+                'created_at': session.timestamp.isoformat(),  # Use session timestamp instead
+                'sentiment_score': sentiment.sentiment_score,
+                'sentiment': sentiment.sentiment,
+                'session_id': sentiment.session_id
+            })
+
+        return jsonify(result), 200
+
+    except Exception as e:
+        logger.error(f"[User: {user_email}] User Sentiments Retrieval Error: {e}")
+        return jsonify({"error": "Failed to retrieve user sentiments"}), 500
+

@@ -8,15 +8,17 @@ from app.models.user_summary import UserSummary
 from app.services.ai_service import (
     generateSessionSummary,
     generateUserSummary,
-    generate_embedding
+    generate_embedding,
+    analyze_sentiment
 )
 from flask import current_app
 import json
 import logging
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import text
 from app.routes.chat_routes import update_user_summary  # Add this import at the top
+from app.models.session_sentiments import SessionSentiments
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -217,6 +219,57 @@ def delete_marked_chats():
         logger.error(f"Error during deletion process: {str(e)}")
         raise
 
+def refresh_session_sentiments(filter_preferences=None):
+    """Refresh all session sentiments"""
+    logger.info("Starting session sentiments refresh...")
+    
+    if filter_preferences is None:
+        filter_preferences = get_session_filter_preferences()
+    
+    sessions = get_filtered_sessions(filter_preferences)
+    count = 0
+    
+    logger.info(f"Found {len(sessions)} sessions matching filter criteria")
+    
+    for session in sessions:
+        try:
+            messages = json.loads(session.messages)
+            # Only include user messages
+            user_messages = [msg.get('content', '') for msg in messages if msg.get('role') == 'user']
+            message_text = " ".join(user_messages)
+            
+            # Get or create SessionSentiments for this chat session
+            sentiment = SessionSentiments.query.filter_by(session_id=session.id).first()
+            if not sentiment:
+                now = datetime.now(timezone.utc)
+                sentiment = SessionSentiments(
+                    session_id=session.id,
+                    created_at=now,
+                    updated_at=now
+                )
+            
+            # Analyze sentiment for the combined message text
+            sentiment_analysis = analyze_sentiment(message_text)
+            
+            # Update sentiment values
+            sentiment.user_email = session.user_email
+            sentiment.sentiment = sentiment_analysis.get('sentiment')
+            sentiment.sentiment_score = sentiment_analysis['sentiment_score']
+            sentiment.updated_at = datetime.now(timezone.utc)
+            
+            db.session.add(sentiment)
+            db.session.commit()
+            
+            count += 1
+            logger.info(f"Updated sentiments for session {session.id}")
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error updating sentiments for session {session.id}: {str(e)}")
+    
+    logger.info(f"Completed refreshing sentiments for {count} sessions")
+    return count
+
 def main():
     parser = argparse.ArgumentParser(description='Refresh AI-generated content')
     parser.add_argument('--sessions', action='store_true', help='Refresh session summaries')
@@ -225,6 +278,7 @@ def main():
     parser.add_argument('--all', action='store_true', help='Refresh everything')
     parser.add_argument('--no-prompt', action='store_true', help='Skip prompts and include all sessions')
     parser.add_argument('--delete-marked', action='store_true', help='Permanently delete marked chats')
+    parser.add_argument('--sentiments', action='store_true', help='Refresh session sentiments')
     
     args = parser.parse_args()
     
@@ -250,6 +304,9 @@ def main():
                 user_count = refresh_user_summaries(filter_preferences)
                 logger.info(f"Updated {user_count} user summaries")
 
+            if args.sentiments:
+                sentiment_count = refresh_session_sentiments(filter_preferences)
+                logger.info(f"Updated sentiments for {sentiment_count} sessions")
                 
         except Exception as e:
             logger.error(f"An error occurred during refresh: {str(e)}")

@@ -11,13 +11,22 @@ from tiktoken import encoding_for_model
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 import logging
+import openai
+import nltk
+from nltk.sentiment import SentimentIntensityAnalyzer
 
+# Add debug flag from environment
+debug_mode = str(os.getenv("DEBUG_MODE", "false")).lower() == "true"
 
 logger = logging.getLogger(__name__)
 
 client = openai
 client.api_key = Config.OPENAI_API_KEY
 model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+
+nltk.download('vader_lexicon')
+sia = SentimentIntensityAnalyzer()
+
 logger.info(f"Using OpenAI model: {model}")
 sessionSummaryMaxTokens = 2048
 userSummaryMaxTokens = 2048
@@ -45,7 +54,14 @@ def generate_ai_response(messages, user_email, assistant_id=None, goal_ids=None)
 
         logger.info(f"OpenAI API Usage Stats: {openai_response.usage}")
 
-        return openai_response.choices[0].message.content
+        response_content = openai_response.choices[0].message.content
+
+        # If debug mode is enabled, prepend the system prompt
+        if debug_mode:
+            system_messages = full_context
+            response_content = ''.join(json.dumps(full_context)) + "\n\n=== AI RESPONSE ===\n\n" + response_content
+
+        return response_content
 
     except Exception as e:
         logger.error(f"[User: {user_email}] Error generating AI response: {str(e)}")
@@ -519,3 +535,16 @@ def get_most_relevant_context(user_email, current_message, min_n=2, max_n=5, sim
         logger.error(f"[User: {user_email}] Error in get_most_relevant_context: {str(e)}")
         return []  # Return empty list on any error
 
+
+def analyze_sentiment(text):
+    """Analyze sentiment using VADER (for fast analysis)."""
+    score = sia.polarity_scores(text)['compound']
+    
+    if score >= 0.3:
+        sentiment = "Positive"
+    elif score <= -0.3:
+        sentiment = "Negative"
+    else:
+        sentiment = "Neutral"
+
+    return {"sentiment": sentiment, "sentiment_score": score}
