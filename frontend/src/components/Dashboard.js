@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
 import ContributionGraph from './ContributionGraph';
 import Streaks from './Streaks';
+import MoodTracker from './MoodTracker';
 import axios from "axios";
-import { FaFire, FaChartArea } from 'react-icons/fa';
+import { FaFire, FaChartArea, FaSmile } from 'react-icons/fa';
+
 
 const Dashboard = ({ user }) => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -74,6 +76,16 @@ const Dashboard = ({ user }) => {
             availableYears={availableYears}
             onYearChange={setSelectedYear}
           />
+        </div>
+
+        <div className="dashboard-section">
+          <div className="section-header">
+            <h3>
+              <FaSmile style={{ color: '#10b981', marginRight: '8px' }} />
+              Mood Tracker
+            </h3>
+          </div>
+          <MoodTracker user={user}/>
         </div>
       </div>
     </div>
