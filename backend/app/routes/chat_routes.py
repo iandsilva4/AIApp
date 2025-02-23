@@ -346,17 +346,22 @@ def update_user_summary(user_email):
     )
 
         if session_summaries:
+            # Get existing user summary if it exists
+            user_summary = UserSummary.query.filter_by(user_email=user_email).first()
+            previous_summary = user_summary.summary if user_summary else None
+
             # Generate an overall user summary from session summaries
-            new_user_summary = generateUserSummary([s['summary'] for s in session_summaries])
+            new_user_summary = generateUserSummary(
+                [s['summary'] for s in session_summaries],
+                previous_summary=previous_summary
+            )
 
             # Update or create user summary in the database
-            user_summary = UserSummary.query.filter_by(user_email=user_email).first()
-            
             if user_summary:
                 user_summary.summary = new_user_summary
                 user_summary.session_summaries = json.dumps(session_summaries)
                 user_summary.session_embeddings = json.dumps(session_embeddings)
-                user_summary.updated_at = datetime.now(timezone.utc)
+                user_summary.updated_at = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S.%f')
             else:
                 new_user_summary_record = UserSummary(
                     user_email=user_email,

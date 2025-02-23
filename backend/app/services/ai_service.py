@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 client = openai
 client.api_key = Config.OPENAI_API_KEY
 model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+secondary_model = os.getenv("OPENAI_MODEL_SECONDARY", "gpt-4o-mini")
 
 nltk.download('vader_lexicon')
 sia = SentimentIntensityAnalyzer()
@@ -52,14 +53,13 @@ def generate_ai_response(messages, user_email, assistant_id=None, goal_ids=None)
             #presence_penalty=0.8          # Encourages new topics (-2.0 to 2.0, higher = more topic changes)
         )
 
-        logger.info(f"OpenAI API Usage Stats: {openai_response.usage}")
+        logger.info(f"OpenAI API Usage Stats (Main AI Response): {openai_response.usage}")
 
         response_content = openai_response.choices[0].message.content
 
         # If debug mode is enabled, prepend the system prompt
         if debug_mode:
-            system_messages = full_context
-            response_content = ''.join(json.dumps(full_context)) + "\n\n=== AI RESPONSE ===\n\n" + response_content
+            logger.info(''.join(json.dumps(full_context)) + "\n\n=== AI RESPONSE ===\n\n" + response_content)
 
         return response_content
 
@@ -68,99 +68,58 @@ def generate_ai_response(messages, user_email, assistant_id=None, goal_ids=None)
         return "I'm having trouble generating a response right now."
 
 def createContext(messages, user_email, assistant_id, goal_ids):
-    
-    if not messages:  # Handle empty messages case
+    """
+    Builds the full context for an AI response, including relevant past session summaries and user history.
+    """
+    if not messages:
         latest_message = "User has started a new session."
     else:
         latest_message = messages[-1]['content']
 
-    # Step 1: Get relevant summaries & full conversations
-    #session_summaries, full_conversations = get_most_relevant_context(user_email, latest_message)
-    session_summaries = get_most_relevant_context(user_email, latest_message, min_n=1, max_n=5, similarity_threshold=0.75)
+    # Step 1: Fetch relevant past sessions
     user_summary = UserSummary.query.filter_by(user_email=user_email).first()
 
-    # Step 2: Set max token budget (adjust based on model)
-    MAX_TOKENS = 30000 
+    # Step 2: Get the updated system prompt
+    system_prompt = getSystemPrompt(assistant_id, goal_ids, user_email)
 
-    # Step 3: Get the appropriate system prompt (therapist's prompt if available, otherwise default)
-    system_prompt = getSystemPrompt(assistant_id, goal_ids)
-
-    system_prompt += (
-        "Below is context structured as follows:\n"
-        "- USER SUMMARY: A summary of the user's long-term history of all sessions.\n"
-        "- PAST SUMMARIES: Summaries of previous individual sessions.\n"
-        #"- FULL CONVERSATIONS: Full logs from previous relevant conversations.\n"
-        "- CURRENT MESSAGES: The ongoing discussion. \n"
-        "In CURRENT MESSAGES, you (the system) are the Assistant and you are responding to the User. \n\n"
-    )
-
-    # Step 4: Estimate token usage
-    total_tokens = count_tokens(system_prompt)
-
-    # Step 5: Create lists for structured message ordering
+    # Step 5: Organize context structure
     system_messages = [{"role": "system", "content": system_prompt}]
+
     current_session_messages = []
     past_summaries = []
     user_summary_messages = []
 
-    # Step 6: Append the most recent user-assistant exchanges (current session)
-    trimmed_messages = messages
-    for msg in trimmed_messages:
-        message_tokens = count_tokens(msg["content"])
-        if total_tokens + message_tokens < MAX_TOKENS:
-            current_session_messages.append({"role": msg["role"], "content": msg["content"]})
-            total_tokens += message_tokens
-        else:
-            break
+    # Step 6: Include recent user-assistant exchanges (current session)
+    for msg in messages:
+        current_session_messages.append({"role": msg["role"], "content": msg["content"]})
 
-    # Step 7: Add user summary if it exists
+    # Step 7: Add user summary if available
     if user_summary and user_summary.summary:
-        user_summary_content = f"USER SUMMARY:\n{user_summary.summary}\n"
-        user_summary_tokens = count_tokens(user_summary_content)
-        if total_tokens + user_summary_tokens < MAX_TOKENS:
-            user_summary_messages.append({"role": "system", "content": user_summary_content})
-            total_tokens += user_summary_tokens
+        trimmed_summary = trim_user_summary(user_summary.summary, latest_message)
+        user_summary_content = f"USER SUMMARY:\n{trimmed_summary}\n"
+        user_summary_messages.append({"role": "system", "content": user_summary_content})
 
-    # Step 8: Add past session summaries if space allows
-    if session_summaries and total_tokens < MAX_TOKENS:
-        past_summaries_content = "PAST SUMMARIES:\n"
-        added_summaries = []
-        
-        for session in session_summaries:
-            summary_text = f"- Session {session['session_id']} ({session['timestamp']}): {session['summary']}"
-            summary_tokens = count_tokens(summary_text)
-            
-            if total_tokens + summary_tokens < MAX_TOKENS:
-                added_summaries.append(summary_text)
-                total_tokens += summary_tokens
-            else:
-                break
-                
-        if added_summaries:
-            summaries_text = "\n".join(added_summaries)
-            past_summaries.append({"role": "system", "content": past_summaries_content + summaries_text})
+    # Step 9: Inject relevant past insights if they apply
+    relevant_insights = inject_relevant_past_insights(user_email, latest_message)
+    if relevant_insights:
+        past_summaries.append({"role": "system", "content": f"**Relevant Past Session Insights:** {relevant_insights}"})
 
-    # Step 8: Assemble messages in correct order (system → user summary → past summaries → current session)
+    # Step 10: Assemble full context
     messages_list = system_messages + user_summary_messages + past_summaries + current_session_messages
 
     if not current_session_messages and not user_summary_messages:
-        messages_list.append({
-            "role": "system", 
-            "content": "This is your first ever session with them. Say hello!"
-        })
+        messages_list.append({"role": "system", "content": "This is your first ever session with them. Say hello!"})
     elif not current_session_messages:
-        messages_list.append({
-            "role": "system", 
-            "content": "This is a new session. Say hello!"
-        })
+        messages_list.append({"role": "system", "content": "This is a new session. Say hello!"})
 
     return messages_list
 
-def getSystemPrompt(assistant_id, goal_ids):
+def getSystemPrompt(assistant_id, goal_ids, user_email):
+    """
+    Generates the system prompt, incorporating user goals, past insights, and follow-up instructions.
+    """
     try:
-        system_prompt = (
-            "You are an AI coach helping the user with their goals. "
-        )
+        system_prompt = "You are an AI coach helping the user with their goals."
 
         # Add assistant-specific system prompt if available
         if assistant_id:
@@ -169,183 +128,103 @@ def getSystemPrompt(assistant_id, goal_ids):
                 assistant = Assistant.query.get(assistant_id)
                 if assistant and assistant.system_prompt:
                     logger.info(f"Using custom assistant prompt for assistant_id: {assistant_id}")
-                    system_prompt += "Your name is " + assistant.name + " and you are going to adopt the following personality: " + assistant.system_prompt + "\n\n"
+                    system_prompt += f"\nYour name is {assistant.name}, and your personality is: {assistant.system_prompt}"
                 else:
-                    logger.warning(f"No assistant or system prompt found for assistant_id: {assistant_id}")
+                    logger.warning(f"No assistant system prompt found for assistant_id: {assistant_id}")
             except Exception as e:
                 logger.error(f"Error retrieving assistant system prompt for assistant_id {assistant_id}: {str(e)}")
-                # Continue with default prompt if assistant lookup fails
 
-        if not goal_ids:
-            goal_ids = [1]
-
+        # Add user goals
         if goal_ids:
             try:
                 from app.models.goals import Goals
                 goals = Goals.query.filter(Goals.id.in_(goal_ids)).all()
                 if goals:
                     logger.info(f"Adding goals context for goal_ids: {goal_ids}")
-                    system_prompt += "\nThe user has selected the following goals they want to work on:\n"
+                    system_prompt += "\n\nThe user has selected the following goals:\n"
                     for goal in goals:
                         system_prompt += f"- {goal.name}: {goal.system_prompt}\n"
-                    system_prompt += "\nPlease keep these goals in mind during your conversation and help guide the user towards achieving them.\n"
-                else:
-                    logger.warning(f"No goals found for goal_ids: {goal_ids}")
             except Exception as e:
                 logger.error(f"Error retrieving goals for goal_ids {goal_ids}: {str(e)}")
 
-        system_prompt += "\n\n"
-
+        # Add follow-up instructions
         system_prompt += (
-            "In addition to the goals, you should also keep in mind the following: \n"
-            "\n- Ask thoughtful questions to help you and the user clarify their thoughts, but avoid overwhelming them — limit follow-up questions to one per exchange, asking just the most critical and insightful question. "
-            "\n- Maintain focus on the user's initial topic, guiding them deeper into their reflection rather than opening unrelated lines of inquiry. "
-            "\n- You should recall key insights from previous sessions to maintain an evolving conversation. "
-            "\n- If you are sensing a user is not sure what to talk about, provide prompts and structure to help them. "
-            "\n"
-        )
-
-        old_system_prompt = (
-            "You are a reflective and engaging thought partner, journaling assistant, and highly capable assistant, helping users explore emotions, challenge their thinking, and take meaningful steps forward. "
-            "Your responses should feel natural, engaging, and thought-provoking—not robotic or overly structured. "
-            "Your tone should be warm, conversational, and concise—respond like a thoughtful friend who listens deeply and encourages meaningful reflection. \n\n"
-
-            "You need to strike a balance of being a thought partner and a therapist. "
-            "When you are in therapist mode: \n"
-            "Draw from evidence-based therapeutic approaches, incorporating Cognitive Behavioral Therapy (CBT) for reframing negative thought patterns, "
-            "Dialectical Behavior Therapy (DBT) for emotional regulation, and Acceptance and Commitment Therapy (ACT) to promote psychological flexibility. "
-            "When relevant, integrate insights from Psychodynamic Therapy by exploring unconscious patterns and past experiences, and Humanistic Therapy by encouraging self-acceptance and personal meaning. "
-            "Prioritize self-discovery over solutions—ask exploratory questions first, help users clarify their thoughts, and only offer guidance when they seem ready. "
-            "Use past session context naturally, avoiding unnecessary repetition or summarization. Ensure questions are open-ended, avoiding leading language or assumed answers. "
-            "Maintain a warm, conversational tone—be concise, engaging, and push for deeper reflection when needed. \n\n"
-
-            "Ask thoughtful questions to help users clarify their thoughts, but avoid overwhelming them — limit follow-up questions to one per exchange, asking just the most critical and insightful question. "
-            "Your questions should aim to both help you and help the user learn about themselves. "
-            "When asking questions, keep them specific and grounded in the user's recent experiences, rather than shifting to broad, abstract topics. "
-            "Maintain focus on the user's initial topic, guiding them deeper into their reflection rather than opening unrelated lines of inquiry. "
-            "Limit repetitive 'How do you feel?' questions. Instead, help users arrive at their emotions through specific, casual, and smaller questions that feel natural and engaging. \n\n"
-
-            "You should strike a balance between asking questions and synthesizing takeaways. It's important to help the user learn more about themselves. "
-            "Balance questioning with observations: for example, you can have two responses focus on exploration questions, then the third offers a reflective insight or psychoanalysis. \n\n"
-
-            "You should recall key insights from previous sessions to maintain an evolving conversation. "
-            "If the user committed to an action, follow up proactively:\n"
-
-            "- 'Last time, you planned to reach out to someone in your industry. How did that go?'\n"
-            "- If they haven't followed through, ask: 'I remember you were going to start that project—what got in the way? Anything we need to adjust?'\n\n"
-
-            "If a user is unsure what to write about, provide structure rather than leaving it open-ended. Offer options like:\n"
-
-            "- 'We can explore personal growth, challenges, or meaningful moments from your week. Want to pick one?'\n"
-            "- 'Think about the last week—was there a moment that annoyed you, challenged you, or made you feel proud? Let's start there.'\n\n"
-
-            "DO NOT immediately offer solutions. Instead, help the user sit with their problem and explore its root cause before problem-solving. "
-            "For example, if a user is procrastinating on job searching, do NOT immediately suggest scheduling applications. Instead, ask:\n"
-
-            "- 'What's the hardest part about starting? Uncertainty about where to begin, fear of rejection, or something else?'\n"
-            "- 'When you imagine yourself already in a great job, what stands out? What do you want that to look like?'\n\n"
-
-            "Once the user has processed their emotions, THEN guide them toward an action step.\n\n"
-
-            "Do NOT assume the user always wants direct advice. Before providing solutions, ask a reflective question to help them process their thoughts. "
-            "Only offer direct guidance if the user explicitly asks for it or seems stuck. For example:\n"
-
-            "- Instead of: 'You should reach out to Booth alumni and schedule informational interviews.'\n"
-            "- Say: 'When you think about networking, what feels hardest—figuring out who to reach out to, making the actual connections, or something else?'\n\n"
-
-            "Do NOT repeat what the user just said unless it adds clarity or structure. Instead of mirroring, immediately move the conversation forward. For example:\n"
-
-            "- Instead of: 'It sounds like you're struggling to balance your app with job searching.'\n"
-            "- Say: 'What about job searching feels hardest to start—uncertainty, rejection, or something else?'\n\n"
-
-            "If a user makes a strong statement about themselves, challenge them in a constructive way. For example, if a user says, 'I feel stuck in my career,' respond with:\n"
-
-            "- 'Are you truly stuck, or do you just feel that way because you haven't made a decision yet?'\n"
-            "- 'What's stopping you from making a change right now?'\n"
-            "- 'What do you already know about what you want—but maybe haven't admitted to yourself yet?'\n\n"
-
-            "If they make a realization, don't just agree—push them further:\n"
-
-            "- Instead of: 'That's a great realization!'\n"
-            "- Say: 'Okay, but let's test that. If you *had* to make a big leap, what would it be? No overthinking—what's the first thing that comes to mind?'\n\n"
-
-            "If a user expresses a desire for change, **help them create an actionable plan**, but only after they've explored the emotional side of the issue. "
-            "When setting goals, encourage clarity:\n"
-
-            "- 'What's a small, first step you could take today?'\n"
-            "- 'What obstacles do you anticipate, and how can you prepare for them?'\n"
-            "- 'What would success look like for you in one week?'\n\n"
-
-            "Your tone should be **warm, engaging, and natural**. You are not a clinical therapist or a generic AI—you are a dynamic thought partner. "
-            "It's okay to be playful when appropriate. For example:\n"
-
-            "- Instead of: 'That's a great realization!'\n"
-            "- Say: 'Oh, I love where this is going. So, what's the first move? Let's get this momentum rolling.'\n"
-
-            "- Instead of: 'Taking on that outdated process sounds like a great idea.'\n"
-            "- Say: 'Fixing an outdated process? That’s basically a builder’s playground. If you pull this off, you might just become ‘the person who fixes things’ at your company.'\n\n"
-
-            "Above all, you are a **thoughtful, engaging, and reflective guide**. "
-            "Your goal is not just to validate but to **help users uncover deeper insights, challenge their assumptions, and take meaningful steps forward.** "
-            "You are not just a passive listener—you are an active thought partner who helps the user move forward in their personal growth."
+            "\n\nYou must recall key insights from previous sessions to maintain an evolving conversation. "
+            "Ensure you follow up on recurring themes and past discussions naturally, without forcing repetition."
         )
 
         return system_prompt
 
     except Exception as e:
         logger.error(f"Error in getSystemPrompt: {str(e)}")
-        # Return a minimal fallback prompt in case of errors
         return "You are an AI assistant helping users explore their thoughts and feelings."
 
-def getPastMessages(past_sessions):
-    # Convert all past session messages into OpenAI format
-    formatted_past_messages = []
-    
-    for past_session in past_sessions:
-        past_messages = json.loads(past_session.messages)
-    
-        if past_session.timestamp.tzinfo is None:
-            past_session_timestamp = past_session.timestamp.replace(tzinfo=timezone.utc)
-        else:
-            past_session_timestamp = past_session.timestamp
+def trim_user_summary(user_summary, latest_message):
+    """
+    Trims the user summary to retain only the most relevant themes based on the latest conversation topic.
+    Removes details that are less relevant to the user's current focus.
+    """
+    try:
+        prompt = (
+            "You are helping an AI coach respond to its user. Here is an overall summary of the user's history. "
+            "Can you pull out what you think the AI coach should know when responding to the user?. Remove any outdated or less relevant details.\n\n"
+            f"User Summary:\n{user_summary}\n\n"
+            f"Latest User Message:\n{latest_message}\n\n"
+            "Provide a concise summary of what you think the AI coach should know."
+        )
 
-        # Compute time difference
-        time_difference = datetime.now(timezone.utc) - past_session_timestamp
-        
-        # Convert time difference to human-readable form
-        hours_ago = time_difference.total_seconds() / 3600
-    
-        if hours_ago < 24:
-            time_label = f"{int(hours_ago)} hours ago"
-        else:
-            time_label = f"{int(hours_ago // 24)} days ago"
+        response = client.chat.completions.create(
+            model=secondary_model,
+            messages=[{"role": "system", "content": prompt}],
+            max_tokens=300  # Limit to a smaller summary
+        )
 
-        # Add context to user messages only from past sessions
-        for msg in past_messages:
-            if msg["role"] == "user":
-                formatted_past_messages.append({
-                    "role": msg["role"],
-                    "content": f"[{time_label}, Previous Session ID {past_session.id}] {msg['content']}"
-                })
-            else:
-                formatted_past_messages.append(msg)
+        logger.info(f"OpenAI API Usage Stats (Trim User Summary): {response.usage}")
 
-    return formatted_past_messages;
+        return response.choices[0].message.content.strip()
 
-def getCurrentMessages(current_session_messages, current_message):# Prepare current session messages
-    formatted_current_messages = [
-        {
-            "role": msg["role"],
-            "content": f"[Current Session] {msg['content']}" if msg["role"] == "user" else msg["content"]
-        }
-        for msg in current_session_messages
-    ]
+    except Exception as e:
+        logger.error(f"Error trimming user summary: {str(e)}")
+        return user_summary  # If error, return original summary
 
-    # Append the new user message if it exists
-    if current_message:
-        formatted_current_messages.append({"role": "user", "content": f"[Current Session] {current_message}"})
+def inject_relevant_past_insights(user_email, latest_message):
+    """
+    Selects past insights from session summaries (NOT user summary) that are relevant to the user's latest message.
+    Limits to the 1-2 most recent relevant insights.
+    """
+    try:
+        # Fetch past session summaries
+        past_sessions = get_most_relevant_context(user_email, latest_message, min_n=2, max_n=5, similarity_threshold=0.75)
+        if not past_sessions:
+            return ""
 
-    return formatted_current_messages;
+        # Extract only the most relevant insights
+        session_summaries_text = "\n\n".join([s["summary"] for s in past_sessions])
+
+        prompt = (
+            "The user has past journaling sessions. Extract only the 1-2 most relevant insights that relate "
+            "to the user's latest message. Ignore general themes — only specific takeaways that help in this moment.\n\n"
+            "if there is nothing relevant, just say 'No relevant insights found'.\n\n"
+            "Past Session Summaries:\n"
+            f"{session_summaries_text}\n\n"
+            "Latest User Message:\n"
+            f"{latest_message}\n\n"
+            "Provide the most relevant past insights in a concise format. Please refer to the user as the user isntead of 'you'."
+        )
+
+        response = client.chat.completions.create(
+            model=secondary_model,
+            messages=[{"role": "system", "content": prompt}],
+            max_tokens=150  # Limit insights to 1-2 takeaways
+        )
+
+        logger.info(f"OpenAI API Usage Stats (Past Session Insights): {response.usage}")
+
+        return response.choices[0].message.content.strip()
+
+    except Exception as e:
+        logger.error(f"Error Injecting Relevant Past Session Insights: {str(e)}")
+        return ""
 
 def count_tokens(text, model="gpt-4o-mini"):
     """
@@ -360,70 +239,52 @@ def count_tokens(text, model="gpt-4o-mini"):
     
 def generateSessionSummary(messages):
     """
-    Generate a summary of the current session.
+    Generate a structured session summary including key themes, emotions, challenges,
+    insights, key personal details, and actionable next steps.
     """
     try:
-        # Format messages for the summarization prompt
         system_prompt = (
-            "You are an AI assistant summarizing a user's journaling session. "
-            "Your job is to extract the most important themes and insights. "
-            "Summarize in a concise and meaningful way, avoiding unnecessary details. "
+            "You are summarizing a user's journaling session. "
+            "Structure your summary exactly as follows:\n\n"
+            "**Key Themes & Emotions:**\n"
+            "[Briefly summarize main feelings and topics explored.]\n\n"
+            "**Challenges & Patterns:**\n"
+            "[Highlight recurring struggles, decision-making patterns, or emotional triggers.]\n\n"
+            "**Insights & Reflections:**\n"
+            "[Capture new realizations or shifts in the user's perspective.]\n\n"
+            "**Key Details Learned:**\n"
+            "- [List concrete personal details or life updates explicitly mentioned.]\n\n"
+            "**Potential Next Steps:**\n"
+            "[Suggest immediate or future actions the user could take.]"
         )
 
         formatted_messages = [
             {"role": "system", "content": system_prompt},
-            {"role": "user", "content": "Summarize this conversation:\n\n" + "\n".join(
-                [f"{msg['role'].capitalize()}: {msg['content']}" for msg in messages]
+            {"role": "user", "content": (
+                "Summarize the following conversation:\n\n" +
+                "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in messages])
             )}
         ]
-        # Generate summary using OpenAI
+
         summary_response = client.chat.completions.create(
-            model=model,
+            model=secondary_model,
             messages=formatted_messages,
-            max_completion_tokens=sessionSummaryMaxTokens
+            max_tokens=sessionSummaryMaxTokens
         )
 
-        return summary_response.choices[0].message.content.strip()
+        logger.info(f"OpenAI API Usage Stats (Session Summary): {summary_response.usage}")
+
+        summary = summary_response.choices[0].message.content.strip()
+
+        if not summary:
+            logger.warning("Generated summary is empty.")
+            return "Summary unavailable. Try refining the session details."
+
+        return summary
 
     except Exception as e:
         logger.error(f"Session Summary Generation Error: {e}")
-        raise
-
-def generateUserSummary(session_summaries):
-    """
-    Generate an overall user summary based on multiple session summaries.
-    """
-    try:
-        logger.info("Generating user summary from session summaries")
-        
-        user_summary_system_prompt = (
-            "You are an assistant that extracts the most important ongoing themes and patterns from multiple therapy sessions for the user. "
-            "Your goal is NOT to create a generic summary, but to capture the user's evolving concerns, progress, and emotional patterns over time. "
-            "Identify shifts in thinking, unresolved issues, and any recurring struggles or breakthroughs. "
-            "Ensure that this summary provides the key context necessary for future responses to feel naturally connected to the user's past experiences. "
-            "Keep it concise but meaningful, preserving what truly matters for continuity. "
-            "Speak in third person, as if you are a therapist speaking about the user."
-        )
-
-        formatted_messages = [
-            {"role": "system", "content": user_summary_system_prompt},
-            {"role": "user", "content": (
-                "Please extract the most important ongoing themes and patterns from these therapy session summaries:\n\n"
-                + "\n\n".join(session_summaries)
-            )}
-        ]
-        # Generate combined summary using OpenAI
-        summary_response = client.chat.completions.create(
-            model=model,
-            messages=formatted_messages,
-            max_completion_tokens=userSummaryMaxTokens
-        )
-
-        return summary_response.choices[0].message.content
-
-    except Exception as e:
-        logger.error(f"User Summary Generation Error: {e}")
-        raise
+        return "An error occurred while generating the summary."
 
 def generate_embedding(text):
     """
@@ -438,6 +299,59 @@ def generate_embedding(text):
     except Exception as e:
         logger.error(f"Error generating embedding: {e}")
         return None
+
+def generateUserSummary(session_summaries, previous_summary=None):
+    """
+    Generate an evolving user summary by comparing past and current session insights.
+    """
+    try:
+        system_prompt = (
+            "You are summarizing a user's long-term growth and evolving thoughts based on multiple journaling sessions. "
+            "Ensure that you track how the user's mindset has changed over time rather than repeating the same observations. "
+            "Format the summary as follows:\n\n"
+            "**Key Themes & Patterns:**\n"
+            "[List 3-5 recurring major themes from past sessions.]\n\n"
+            "**Recent Changes in Thinking:**\n"
+            "[Compare new insights with past user summaries to track shifts in perspective.]\n\n"
+            "**Persistent Personal Facts:**\n"
+            "- [List key life details mentioned that should be remembered long-term (e.g., names, places, dates, etc.).]\n\n"
+            "**Ongoing Focus Areas:**\n"
+            "[Suggest what the AI should keep tracking in future conversations.]"
+        )
+
+        user_summary_messages = [{"role": "system", "content": system_prompt}]
+
+        # If there's a previous user summary, compare it to the new sessions
+        if previous_summary:
+            comparison_prompt = (
+                "Compare the following past user summary with the new session insights and update only what has changed:\n\n"
+                f"PAST SUMMARY:\n{previous_summary}\n\n"
+                "NEW SESSION INSIGHTS:\n" + "\n\n".join(session_summaries)
+            )
+            user_summary_messages.append({"role": "user", "content": comparison_prompt})
+        else:
+            user_summary_messages.append({"role": "user", "content": "\n\n".join(session_summaries)})
+
+        # Generate summary
+        summary_response = client.chat.completions.create(
+            model=secondary_model,
+            messages=user_summary_messages,
+            max_tokens=userSummaryMaxTokens
+        )
+
+        logger.info(f"OpenAI API Usage Stats (User Summary): {summary_response.usage}")
+
+        summary = summary_response.choices[0].message.content.strip()
+
+        if not summary:
+            logger.warning("Generated user summary is empty.")
+            return "Summary unavailable. Try refining the session details."
+
+        return summary
+
+    except Exception as e:
+        logger.error(f"User Summary Generation Error: {e}")
+        return "An error occurred while generating the user summary."
     
 def get_most_relevant_context(user_email, current_message, min_n=2, max_n=5, similarity_threshold=0.7):
     """
@@ -535,7 +449,6 @@ def get_most_relevant_context(user_email, current_message, min_n=2, max_n=5, sim
         logger.error(f"[User: {user_email}] Error in get_most_relevant_context: {str(e)}")
         return []  # Return empty list on any error
 
-
 def analyze_sentiment(text):
     """Analyze sentiment using VADER (for fast analysis)."""
     score = sia.polarity_scores(text)['compound']
@@ -548,3 +461,4 @@ def analyze_sentiment(text):
         sentiment = "Neutral"
 
     return {"sentiment": sentiment, "sentiment_score": score}
+
