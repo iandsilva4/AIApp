@@ -388,7 +388,7 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
     };
 
     initializeNewChat();
-  }, [activeSession, user, sessions, isInitializingChat]);
+  }, [activeSession, user, sessions, isInitializingChat, setSessions]);
 
   // Replace the existing renderStartingNewChat function with this updated version
   const renderStartingNewChat = () => (
