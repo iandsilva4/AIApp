@@ -23,6 +23,9 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
   const [currentAssistant, setCurrentAssistant] = useState(null);
   const [availableAssistants, setAvailableAssistants] = useState([]);
   const [availableGoals, setAvailableGoals] = useState([]);
+  const [isInitializingChat, setIsInitializingChat] = useState(false);
+  const [initializationSteps, setInitializationSteps] = useState([]);
+  const [currentStep, setCurrentStep] = useState('');
 
   // Reset textarea height
   const resetTextareaHeight = () => {
@@ -145,7 +148,8 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
         { 
           session_id: activeSession, 
           message: input,
-          assistant_id: currentSession.assistant_id
+          assistant_id: currentSession.assistant_id,
+          goal_ids: currentSession.goal_ids
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -317,6 +321,75 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
     }
   }, [user]);
 
+  // Update the effect to also set messages
+  useEffect(() => {
+    const initializeNewChat = async () => {
+      if (!activeSession || isInitializingChat) return;
+      
+      const session = sessions.find(s => s.id === activeSession);
+      if (!session || session.messages?.length > 0) return;
+      
+      try {
+        setIsInitializingChat(true);
+        const token = await user.getIdToken();
+
+        setCurrentStep('Ending old sessions');
+
+        // First, end old sessions
+        const createResponse = await axios.post(
+          `${process.env.REACT_APP_BACKEND_URL}/sessions`,
+          { session_id: activeSession },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        // Fetch all sessions to ensure sidebar is up to date after ending old sessions
+        const sessionsResponse = await axios.get(
+          `${process.env.REACT_APP_BACKEND_URL}/sessions`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setSessions(sessionsResponse.data);
+
+        setInitializationSteps(prev => [...prev, 'Ending old sessions']);
+        setCurrentStep('Gathering History');
+
+        // Then get initial AI response
+        const initResponse = await axios.post(
+          `${process.env.REACT_APP_BACKEND_URL}/chat/respond`,
+          { 
+            session_id: activeSession,
+            is_initial: true,
+            assistant_id: session.assistant_id,
+            goal_ids: session.goal_ids
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        // Update messages with AI's initial response
+        const newMessages = initResponse.data.messages;
+        setMessages(newMessages);
+        
+        setSessions(prevSessions => 
+          prevSessions.map(s => 
+            s.id === activeSession
+              ? { ...createResponse.data, messages: newMessages }
+              : s
+          )
+        );
+
+        setInitializationSteps([]);
+        setCurrentStep('');
+
+      } catch (err) {
+        setErrorMessage("Failed to initialize chat");
+        console.error("Error initializing chat:", err);
+      } finally {
+        setIsInitializingChat(false);
+      }
+    };
+
+    initializeNewChat();
+  }, [activeSession, user, sessions, isInitializingChat]);
+
   // Replace the existing renderStartingNewChat function with this updated version
   const renderStartingNewChat = () => (
     <div className="welcome-message assistants-grid">
@@ -382,6 +455,54 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
     </div>
   );
 
+  // Update the renderLoadingMessage to remove the initializing text
+  const renderLoadingMessage = () => (
+    <div className="message-container assistant">
+      <div className="profile-icon assistant">
+        {currentAssistant?.assistant_avatar ? (
+          <img 
+            src={currentAssistant.assistant_avatar} 
+            alt={currentAssistant.assistant_name || 'Assistant'} 
+            className="assistant-avatar"
+          />
+        ) : (
+          <div className="assistant-initial">
+            {(currentAssistant?.assistant_name?.[0] || 'A').toUpperCase()}
+          </div>
+        )}
+      </div>
+      <div className="message assistant loading">
+        {messages.length === 0 ? (
+          <div className="initialization-steps">
+            <div className="typing-indicator">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <div className="steps-list">
+              {initializationSteps.map((step, index) => (
+                <div key={index} className={`step completed`}>
+                  {step}
+                </div>
+              ))}
+              {currentStep && (
+                <div className="step current">
+                  {currentStep}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="typing-indicator">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="chat-window">
       <div className="chat-header">
@@ -439,75 +560,81 @@ const ChatWindow = ({ user, activeSession, isSidebarOpen, setIsSidebarOpen, sess
           </div>
         ) : (
           <>
-            {messages.map((msg, index) => (
-              msg.role === 'assistant' ? (
-                <div key={index} className="message-container assistant">
-                  <div className="profile-icon assistant">
-                    {currentAssistant?.assistant_avatar ? (
-                      <img 
-                        src={currentAssistant.assistant_avatar} 
-                        alt={currentAssistant.assistant_name || 'Assistant'} 
-                        className="assistant-avatar"
-                      />
-                    ) : (
-                      <div className="assistant-initial">
-                        {(currentAssistant?.assistant_name?.[0] || 'A').toUpperCase()}
+            {messages.length === 0 ? (
+              renderLoadingMessage()
+            ) : (
+              <>
+                {messages.map((msg, index) => (
+                  msg.role === 'assistant' ? (
+                    <div key={index} className="message-container assistant">
+                      <div className="profile-icon assistant">
+                        {currentAssistant?.assistant_avatar ? (
+                          <img 
+                            src={currentAssistant.assistant_avatar} 
+                            alt={currentAssistant.assistant_name || 'Assistant'} 
+                            className="assistant-avatar"
+                          />
+                        ) : (
+                          <div className="assistant-initial">
+                            {(currentAssistant?.assistant_name?.[0] || 'A').toUpperCase()}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <div className={`message ${msg.role} ${msg.isLoading ? 'loading' : ''}`}>
-                    {msg.isLoading && index === messages.length - 1 ? (
+                      <div className={`message ${msg.role} ${msg.isLoading ? 'loading' : ''}`}>
+                        {msg.isLoading && index === messages.length - 1 ? (
+                          <div className="typing-indicator">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                          </div>
+                        ) : (
+                          <>
+                            {currentAssistant && (
+                              <div className="assistant-name">
+                                {currentAssistant.assistant_name || 'AI Assistant'}
+                              </div>
+                            )}
+                            <ReactMarkdown>{msg.content}</ReactMarkdown>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div key={index} className="message-container user">
+                      <div className="profile-icon user">
+                        {getUserInitials() || <img src={defaultUserIcon} alt="User" />}
+                      </div>
+                      <div className={`message ${msg.role}`}>
+                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      </div>
+                    </div>
+                  )
+                ))}
+                {isAIResponding && !messages[messages.length - 1]?.isLoading && (
+                  <div className="message-container assistant">
+                    <div className="profile-icon assistant">
+                      {currentAssistant?.assistant_avatar ? (
+                        <img 
+                          src={currentAssistant.assistant_avatar} 
+                          alt={currentAssistant.assistant_name || 'Assistant'} 
+                          className="assistant-avatar"
+                        />
+                      ) : (
+                        <div className="assistant-initial">
+                          {(currentAssistant?.assistant_name?.[0] || 'A').toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                    <div className="message assistant loading">
                       <div className="typing-indicator">
                         <span></span>
                         <span></span>
                         <span></span>
                       </div>
-                    ) : (
-                      <>
-                        {currentAssistant && (
-                          <div className="assistant-name">
-                            {currentAssistant.assistant_name || 'AI Assistant'}
-                          </div>
-                        )}
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div key={index} className="message-container user">
-                  <div className="profile-icon user">
-                    {getUserInitials() || <img src={defaultUserIcon} alt="User" />}
-                  </div>
-                  <div className={`message ${msg.role}`}>
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
-                  </div>
-                </div>
-              )
-            ))}
-            {isAIResponding && !messages[messages.length - 1]?.isLoading && (
-              <div className="message-container assistant">
-                <div className="profile-icon assistant">
-                  {currentAssistant?.assistant_avatar ? (
-                    <img 
-                      src={currentAssistant.assistant_avatar} 
-                      alt={currentAssistant.assistant_name || 'Assistant'} 
-                      className="assistant-avatar"
-                    />
-                  ) : (
-                    <div className="assistant-initial">
-                      {(currentAssistant?.assistant_name?.[0] || 'A').toUpperCase()}
                     </div>
-                  )}
-                </div>
-                <div className="message assistant loading">
-                  <div className="typing-indicator">
-                    <span></span>
-                    <span></span>
-                    <span></span>
                   </div>
-                </div>
-              </div>
+                )}
+              </>
             )}
           </>
         )}
