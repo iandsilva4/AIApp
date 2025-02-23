@@ -16,6 +16,9 @@ const Login = ({ setUser }) => {
       try {
         const result = await getRedirectResult(auth);
         if (result?.user) {
+          // Get the ID token and save it
+          const token = await result.user.getIdToken();
+          localStorage.setItem('authToken', token);
           setUser(result.user);
           localStorage.setItem("user", JSON.stringify(result.user));
         }
@@ -23,6 +26,7 @@ const Login = ({ setUser }) => {
         console.error("Redirect sign-in error:", error);
         // Clear any potentially corrupted state
         localStorage.removeItem("user");
+        localStorage.removeItem('authToken');
         sessionStorage.clear();
       }
     };
@@ -30,13 +34,17 @@ const Login = ({ setUser }) => {
     handleRedirectResult();
 
     // Then set up auth state listener
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
+        // Get the ID token and save it
+        const token = await user.getIdToken();
+        localStorage.setItem('authToken', token);
         setUser(user);
         localStorage.setItem("user", JSON.stringify(user));
       } else {
         setUser(null);
         localStorage.removeItem("user");
+        localStorage.removeItem('authToken');
       }
     });
 
@@ -47,12 +55,16 @@ const Login = ({ setUser }) => {
     try {
       const loggedInUser = await signInWithGoogle();
       if (loggedInUser) {
+        // Get the ID token and save it
+        const token = await loggedInUser.getIdToken();
+        localStorage.setItem('authToken', token);
         setUser(loggedInUser);
       }
     } catch (error) {
       console.error("Login error:", error);
       // Clear any potentially corrupted state
       localStorage.removeItem("user");
+      localStorage.removeItem('authToken');
       sessionStorage.clear();
     }
   };
