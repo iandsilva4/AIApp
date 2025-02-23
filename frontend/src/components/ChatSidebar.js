@@ -146,16 +146,9 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
       setLoadingStates(prev => ({ ...prev, creating: true }));
       const token = await user.getIdToken();
       
-      if (activeSession) {
-        try {
-          await handleEndSession();
-        } catch (err) {
-          console.error("Error ending previous session:", err);
-        }
-      }
-
-      const response = await axios.post(
-        `${process.env.REACT_APP_BACKEND_URL}/sessions`,
+      // Just initialize the session
+      const initResponse = await axios.post(
+        `${process.env.REACT_APP_BACKEND_URL}/sessions/initialize`,
         { 
           title: modalSessionTitle || title,
           assistant_id: parseInt(selectedAssistant),
@@ -164,19 +157,19 @@ const ChatSidebar = ({ user, activeSession, setActiveSession, setIsSidebarOpen, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setSessions([response.data, ...sessions]);
-      setActiveSession(response.data.id);
-      /*setEditingSessionId(response.data.id);*/
-      setNewTitle(response.data.title);
-      setOpenSection('active');
+      // Add the new session to the list and set it as active
+      setSessions([initResponse.data, ...sessions]);
+      setActiveSession(initResponse.data.id);
       setShowAssistantSelection(false);
       setModalSessionTitle("");
       setSelectedGoals([]);
+      setIsCreatingNewSession(false);
+
     } catch (err) {
-      handleError("Failed to create a new session.", err);
+      setError("Failed to create a new session");
+      console.error("Error creating session:", err);
     } finally {
       setLoadingStates(prev => ({ ...prev, creating: false }));
-      setIsCreatingNewSession(false);
     }
   };
 

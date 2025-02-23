@@ -73,8 +73,11 @@ def createContext(messages, user_email, assistant_id, goal_ids):
     """
     if not messages:
         latest_message = "User has started a new session."
+        # Get recent session context for first message
+        recent_context = get_most_recent_session_context(user_email)
     else:
         latest_message = messages[-1]['content']
+        recent_context = None
 
     # Step 1: Fetch relevant past sessions
     user_summary = UserSummary.query.filter_by(user_email=user_email).first()
@@ -99,6 +102,13 @@ def createContext(messages, user_email, assistant_id, goal_ids):
         user_summary_content = f"USER SUMMARY:\n{trimmed_summary}\n"
         user_summary_messages.append({"role": "system", "content": user_summary_content})
 
+    # Step 8: Add recent session context for first message
+    if recent_context:
+        past_summaries.append({
+            "role": "system", 
+            "content": f"MOST RECENT SESSION CONTEXT:\n{recent_context}"
+        })
+
     # Step 9: Inject relevant past insights if they apply
     relevant_insights = inject_relevant_past_insights(user_email, latest_message)
     if relevant_insights:
@@ -108,7 +118,16 @@ def createContext(messages, user_email, assistant_id, goal_ids):
     messages_list = system_messages + user_summary_messages + past_summaries + current_session_messages
 
     if not current_session_messages and not user_summary_messages:
-        messages_list.append({"role": "system", "content": "This is your first ever session with them. Say hello!"})
+        if recent_context:
+            messages_list.append({
+                "role": "system", 
+                "content": "This is a new session, but you have met them before. Consider the recent context above when greeting them."
+            })
+        else:
+            messages_list.append({
+                "role": "system", 
+                "content": "This is your first ever session with them. You haven't met them before. Say hello!"
+            })
     elif not current_session_messages:
         messages_list.append({"role": "system", "content": "This is a new session. Say hello!"})
 
@@ -461,4 +480,45 @@ def analyze_sentiment(text):
         sentiment = "Neutral"
 
     return {"sentiment": sentiment, "sentiment_score": score}
+
+def get_most_recent_session_context(user_email):
+    """
+    Get a synthesized context from the user's most recent session.
+    """
+    try:
+        # Get the most recent ended session
+        recent_session = ChatSession.query.filter_by(
+            user_email=user_email,
+            is_deleted=False,
+            is_archived=False,
+            is_ended=True
+        ).order_by(ChatSession.timestamp.desc()).first()
+
+        if not recent_session:
+            return None
+
+        messages = json.loads(recent_session.messages)
+        if not messages:
+            return None
+
+        prompt = (
+            "Synthesize the key points from this recent conversation to help an AI coach "
+            "maintain continuity with the user. Focus on immediate concerns and ongoing topics "
+            "that might be relevant to the new conversation they just started.\n\n"
+            "Recent Conversation:\n" +
+            "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in messages])
+        )
+
+        response = client.chat.completions.create(
+            model=secondary_model,
+            messages=[{"role": "system", "content": prompt}],
+            max_tokens=300
+        )
+
+        logger.info(f"OpenAI API Usage Stats (Recent Session Context): {response.usage}")
+        return response.choices[0].message.content.strip()
+
+    except Exception as e:
+        logger.error(f"Error getting recent session context: {str(e)}")
+        return None
 

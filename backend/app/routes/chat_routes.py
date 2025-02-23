@@ -31,25 +31,57 @@ def get_sessions(user_email):
         logger.error(f"[User: {user_email}] Session Retrieval Error: {e}")
         return jsonify({"error": "Failed to load sessions"}), 500
 
+@chat_bp.route('/sessions/initialize', methods=['POST'])
+@authenticate
+def initialize_session(user_email):
+    try:
+        logger.info(f"[User: {user_email}] Received request to initialize new session")
+        data = request.json
+        title = data.get("title", "Untitled Chat").strip()
+        goal_ids = data.get("goal_ids") or [1]
+        
+        if not title:
+            return jsonify({"error": "Session title cannot be empty"}), 400
+
+        # Create new session with the selected assistant and goals
+        assistant_id = data.get("assistant_id", 1)
+        session = ChatSession(
+            user_email=user_email, 
+            title=title, 
+            messages=json.dumps([]), 
+            summary="", 
+            assistant_id=assistant_id,
+            goal_ids=goal_ids
+        )
+        
+        db.session.add(session)
+        db.session.commit()
+
+        logger.info(f"[User: {user_email}] Successfully initialized new session with ID: {session.id}")
+        return jsonify(session.to_dict()), 201
+    
+    except Exception as e:
+        logger.error(f"[User: {user_email}] Session Initialization Error: {e}")
+        return jsonify({"error": "Failed to initialize session"}), 500
+
 @chat_bp.route('/sessions', methods=['POST'])
 @authenticate
 def create_session(user_email):
     try:
         logger.info(f"[User: {user_email}] Received request to create new session")
         data = request.json
-        title = data.get("title", "Untitled Chat").strip()
-        goal_ids = data.get("goal_ids") or [1]  # Default to [1] if goal_ids is empty/None
+        session_id = data.get("session_id")
         
-        if not title:
-            return jsonify({"error": "Session title cannot be empty"}), 400
+        if not session_id:
+            return jsonify({"error": "Session ID is required"}), 400
 
-        # End previous active sessions and generate summaries
+        # End previous active sessions
         active_sessions = ChatSession.query.filter_by(
             user_email=user_email,
             is_deleted=False,
             is_archived=False,
             is_ended=False
-        ).all()
+        ).filter(ChatSession.id != session_id).all()
 
         # Generate summaries for active sessions before ending them
         for session in active_sessions:
@@ -69,38 +101,18 @@ def create_session(user_email):
         for session in active_sessions:
             session.is_ended = True
         
-        # Create new session with the selected assistant and goals
-        assistant_id = data.get("assistant_id", 1)
-        session = ChatSession(
-            user_email=user_email, 
-            title=title, 
-            messages=json.dumps([]), 
-            summary="", 
-            assistant_id=assistant_id,
-            goal_ids=goal_ids  # Direct array assignment, no JSON needed
-        )
+        # Get the new session
+        session = ChatSession.query.get(session_id)
+        if not session:
+            return jsonify({"error": "Session not found"}), 404
+
+        db.session.commit()
         
-        db.session.add(session)
-        db.session.commit()
-
-        # Generate AI response with goals context
-        ai_message = generate_ai_response(
-            messages=[],
-            user_email=user_email,
-            assistant_id=assistant_id,
-            goal_ids=goal_ids  # Pass goals to the AI service
-        )
-
-        # Save AI's first message
-        initial_messages = [{"role": "assistant", "content": ai_message}]
-        session.messages = json.dumps(initial_messages)
-        db.session.commit()
-
-        logger.info(f"[User: {user_email}] Successfully created new session with ID: {session.id}")
         return jsonify(session.to_dict()), 201
     
     except Exception as e:
         logger.error(f"[User: {user_email}] Session Creation Error: {e}")
+        db.session.rollback()
         return jsonify({"error": "Failed to create session"}), 500
 
 @chat_bp.route('/sessions/<int:session_id>', methods=['PUT'])
@@ -265,9 +277,11 @@ def chat_with_ai(user_email):
         session_id = data.get("session_id")
         message = data.get("message")
         assistant_id = data.get("assistant_id")
+        goal_ids = data.get("goal_ids")
+        is_initial = data.get("is_initial", False)  # New parameter
 
-        if not session_id or not message:
-            return jsonify({"error": "Session ID and message are required"}), 400
+        if not session_id:
+            return jsonify({"error": "Session ID is required"}), 400
 
         # Get the session
         session = ChatSession.query.filter_by(id=session_id, user_email=user_email).first()
@@ -278,15 +292,21 @@ def chat_with_ai(user_email):
             return jsonify({"error": "This session has ended. Please create a new session to continue chatting."}), 403
 
         # Load existing messages
-        current_messages = json.loads(session.messages)
+        current_messages = json.loads(session.messages) if session.messages else []
 
-        current_messages.append({"role": "user", "content": message})
+        # For initial message, we don't need user input
+        if not is_initial and not message:
+            return jsonify({"error": "Message is required"}), 400
+
+        if not is_initial:
+            current_messages.append({"role": "user", "content": message})
 
         # Generate AI response
         ai_response = generate_ai_response(
             messages=current_messages,
             user_email=user_email,
-            assistant_id=assistant_id
+            assistant_id=assistant_id,
+            goal_ids=goal_ids
         )
 
         # Update messages
@@ -297,7 +317,10 @@ def chat_with_ai(user_email):
         db.session.commit()
 
         logger.info(f"[User: {user_email}] Successfully got response from AI for session {session_id}")
-        return jsonify({"message": ai_response}), 200
+        return jsonify({
+            "message": ai_response,
+            "messages": current_messages  # Return all messages for initial request
+        }), 200
 
     except Exception as e:
         logger.error(f"[User: {user_email}] AI Error: {e}")
