@@ -21,6 +21,7 @@ const App = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [isCreatingNewSession, setIsCreatingNewSession] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
+  const [isTokenReady, setIsTokenReady] = useState(false);
 
 
   // Listen for authentication state changes
@@ -32,20 +33,32 @@ const App = () => {
         setUser(JSON.parse(savedUser));
       } catch (e) {
         localStorage.removeItem("user");
+        localStorage.removeItem('authToken');
       }
     }
 
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setIsAuthReady(true);
-      
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        localStorage.setItem("user", JSON.stringify(currentUser));
+        try {
+          // Get fresh token
+          const token = await currentUser.getIdToken();
+          localStorage.setItem('authToken', token);
+          setUser(currentUser);
+          localStorage.setItem("user", JSON.stringify(currentUser));
+          setIsTokenReady(true);
+        } catch (e) {
+          console.error("Error getting token:", e);
+          setIsTokenReady(false);
+        }
       } else {
+        setUser(null);
         localStorage.removeItem("user");
+        localStorage.removeItem('authToken');
         setActiveSession(null);
         setSessions([]);
+        setIsTokenReady(false);
       }
+      setIsAuthReady(true);
     });
 
     return () => unsubscribe();
@@ -62,7 +75,7 @@ const App = () => {
   }, []);
 
   // Show loading while auth is initializing
-  if (!isAuthReady) {
+  if (!isAuthReady || (user && !isTokenReady)) {
     return (
       <div className="app-container">
         <div className="loading-container">
@@ -105,7 +118,9 @@ const App = () => {
 
       {showDashboard ? (
         <div className="app-content">
-          <Dashboard user={user} />
+          <div className="dashboard-wrapper">
+            <Dashboard user={user} />
+          </div>
         </div>
       ) : (
         <div className={`app-content ${isMobile && activeSession ? 'show-chat' : ''}`}>

@@ -12,17 +12,12 @@
   flex-direction: column;
   padding: 24px;
   margin: 0 auto;
-  padding: 2rem;
-  -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.03);
-  border-radius: 15px;
   box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+  gap: 2rem;
 }
 
 .dashboard-header {
-  margin-bottom: 2.5rem;
   text-align: center;
   position: relative;
 }
@@ -51,6 +46,31 @@
   display: flex;
   flex-direction: column;
   gap: 2.5rem;
+  min-height: 0;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+  height: calc(100% - 24px - 65px - 2rem - 24px);
+  width: 100%; /* Ensure content doesn't exceed container width */
+  box-sizing: border-box; /* Include padding in width calculation */
+}
+
+.dashboard-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dashboard-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-content::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 4px;
+}
+
+.dashboard-content::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.7);
 }
 
 .dashboard-section {
