@@ -29,6 +29,8 @@ nltk.download('vader_lexicon')
 sia = SentimentIntensityAnalyzer()
 
 logger.info(f"Using OpenAI model: {model}")
+logger.info(f"Using Secondary OpenAI model: {secondary_model}")
+
 sessionSummaryMaxTokens = 2048
 userSummaryMaxTokens = 2048
 responseMaxTokens = 1024
@@ -311,7 +313,7 @@ def generate_embedding(text):
     """
     try:
         response = openai.embeddings.create(
-            model="text-embedding-3-small", 
+            model="text-embedding-3-large", 
             input=text
         )
         return response.data[0].embedding  # Extract the embedding vector
