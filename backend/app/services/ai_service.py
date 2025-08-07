@@ -197,7 +197,7 @@ def trim_user_summary(user_summary, latest_message):
         response = client.chat.completions.create(
             model=secondary_model,
             messages=[{"role": "system", "content": prompt}],
-            max_tokens=300  # Limit to a smaller summary
+            max_completion_tokens=300  # Limit to a smaller summary
         )
 
         logger.info(f"OpenAI API Usage Stats (Trim User Summary): {response.usage}")
@@ -236,7 +236,7 @@ def inject_relevant_past_insights(user_email, latest_message):
         response = client.chat.completions.create(
             model=secondary_model,
             messages=[{"role": "system", "content": prompt}],
-            max_tokens=150  # Limit insights to 1-2 takeaways
+            max_completion_tokens=150  # Limit insights to 1-2 takeaways
         )
 
         logger.info(f"OpenAI API Usage Stats (Past Session Insights): {response.usage}")
@@ -290,7 +290,7 @@ def generateSessionSummary(messages):
         summary_response = client.chat.completions.create(
             model=secondary_model,
             messages=formatted_messages,
-            max_tokens=sessionSummaryMaxTokens
+            max_completion_tokens=sessionSummaryMaxTokens
         )
 
         logger.info(f"OpenAI API Usage Stats (Session Summary): {summary_response.usage}")
@@ -357,7 +357,7 @@ def generateUserSummary(session_summaries, previous_summary=None):
         summary_response = client.chat.completions.create(
             model=secondary_model,
             messages=user_summary_messages,
-            max_tokens=userSummaryMaxTokens
+            max_completion_tokens=userSummaryMaxTokens
         )
 
         logger.info(f"OpenAI API Usage Stats (User Summary): {summary_response.usage}")
@@ -514,7 +514,7 @@ def get_most_recent_session_context(user_email):
         response = client.chat.completions.create(
             model=secondary_model,
             messages=[{"role": "system", "content": prompt}],
-            max_tokens=300
+            max_completion_tokens=300
         )
 
         logger.info(f"OpenAI API Usage Stats (Recent Session Context): {response.usage}")
