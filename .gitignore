@@ -1,4 +1,90 @@
+# ==========================
+# Global ignores for project
+# Backend (Python/Flask), Frontend (React), OS/IDE, Secrets
+# ==========================
+
+# --------------------------
+# Environment / Secrets
+# --------------------------
 .env
-.env
-serviceAccountKey.json
-/etc
+.env.*
+*.env
+*.env.*
+.flaskenv
+.python-version
+.direnv/
+.envrc
+AIApp.env
+
+# Firebase / service credentials (do not commit secrets)
+*serviceAccount*.json
+*firebase-adminsdk*.*
+backend/firebase-adminsdk-base64.txt
+
+# --------------------------
+# OS files
+# --------------------------
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# --------------------------
+# IDE / Editor
+# --------------------------
+.idea/
+.vscode/
+.history/
+*.swp
+*.swo
+
+# --------------------------
+# Python
+# --------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+pip-wheel-metadata/
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# SQLite / local DBs
+*.sqlite3
+*.db
+
+# --------------------------
+# Node / React
+# --------------------------
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+frontend/build/
+frontend/.eslintcache
+frontend/coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --------------------------
+# Jupyter
+# --------------------------
+.ipynb_checkpoints/
+
+# --------------------------
+# Logs / temp
+# --------------------------
+logs/
+*.log
+tmp/
