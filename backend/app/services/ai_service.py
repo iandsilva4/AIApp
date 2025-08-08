@@ -31,6 +31,10 @@ sia = SentimentIntensityAnalyzer()
 logger.info(f"Using OpenAI model: {model}")
 logger.info(f"Using Secondary OpenAI model: {secondary_model}")
 
+# Embedding model should match stored vector dimension (existing data is 1536 dims)
+embedding_model = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small")
+logger.info(f"Using Embedding model: {embedding_model}")
+
 sessionSummaryMaxTokens = 2048
 userSummaryMaxTokens = 2048
 responseMaxTokens = 1024
@@ -48,7 +52,7 @@ def generate_ai_response(messages, user_email, assistant_id=None, goal_ids=None)
         openai_response = client.chat.completions.create(
             model=model,
             messages=full_context,
-            max_completion_tokens=responseMaxTokens,  # Maximum number of tokens in response (1-16k)
+            #max_completion_tokens=responseMaxTokens,  # Maximum number of tokens in response (1-16k)
             #temperature=1.2,              # Controls randomness/creativity (0.0-2.0, higher = more random)
             #top_p=1,                   # Nucleus sampling, controls diversity (0.0-1.0, lower = more focused)
             #frequency_penalty=0,        # Reduces word repetition (-2.0 to 2.0, higher = less repetition)
@@ -197,7 +201,7 @@ def trim_user_summary(user_summary, latest_message):
         response = client.chat.completions.create(
             model=secondary_model,
             messages=[{"role": "system", "content": prompt}],
-            max_completion_tokens=300  # Limit to a smaller summary
+            #max_completion_tokens=300  # Limit to a smaller summary
         )
 
         logger.info(f"OpenAI API Usage Stats (Trim User Summary): {response.usage}")
@@ -225,7 +229,7 @@ def inject_relevant_past_insights(user_email, latest_message):
         prompt = (
             "The user has past journaling sessions. Extract only the 1-2 most relevant insights that relate "
             "to the user's latest message. Ignore general themes — only specific takeaways that help in this moment.\n\n"
-            "if there is nothing relevant, just say 'No relevant insights found'.\n\n"
+            "if there is nothing relevant, just say 'No relevant insights found' but only say this if there is really nothing.\n\n"
             "Past Session Summaries:\n"
             f"{session_summaries_text}\n\n"
             "Latest User Message:\n"
@@ -235,8 +239,8 @@ def inject_relevant_past_insights(user_email, latest_message):
 
         response = client.chat.completions.create(
             model=secondary_model,
-            messages=[{"role": "system", "content": prompt}],
-            max_completion_tokens=150  # Limit insights to 1-2 takeaways
+            messages=[{"role": "system", "content": prompt},{"role": "user", "content": "Can you please give me a summary of the past sessions?"}],
+            #max_completion_tokens=150  # Limit insights to 1-2 takeaways
         )
 
         logger.info(f"OpenAI API Usage Stats (Past Session Insights): {response.usage}")
@@ -290,7 +294,7 @@ def generateSessionSummary(messages):
         summary_response = client.chat.completions.create(
             model=secondary_model,
             messages=formatted_messages,
-            max_completion_tokens=sessionSummaryMaxTokens
+            #max_completion_tokens=sessionSummaryMaxTokens
         )
 
         logger.info(f"OpenAI API Usage Stats (Session Summary): {summary_response.usage}")
@@ -313,7 +317,7 @@ def generate_embedding(text):
     """
     try:
         response = openai.embeddings.create(
-            model="text-embedding-3-large", 
+            model=embedding_model,
             input=text
         )
         return response.data[0].embedding  # Extract the embedding vector
@@ -352,12 +356,13 @@ def generateUserSummary(session_summaries, previous_summary=None):
             user_summary_messages.append({"role": "user", "content": comparison_prompt})
         else:
             user_summary_messages.append({"role": "user", "content": "\n\n".join(session_summaries)})
+            print("AA#########################")
 
         # Generate summary
         summary_response = client.chat.completions.create(
             model=secondary_model,
             messages=user_summary_messages,
-            max_completion_tokens=userSummaryMaxTokens
+            #max_completion_tokens=userSummaryMaxTokens
         )
 
         logger.info(f"OpenAI API Usage Stats (User Summary): {summary_response.usage}")
@@ -366,6 +371,7 @@ def generateUserSummary(session_summaries, previous_summary=None):
 
         if not summary:
             logger.warning("Generated user summary is empty.")
+            logger.warning("Finish reason:", summary_response.choices[0].finish_reason)
             return "Summary unavailable. Try refining the session details."
 
         return summary
@@ -514,7 +520,7 @@ def get_most_recent_session_context(user_email):
         response = client.chat.completions.create(
             model=secondary_model,
             messages=[{"role": "system", "content": prompt}],
-            max_completion_tokens=300
+            #max_completion_tokens=300
         )
 
         logger.info(f"OpenAI API Usage Stats (Recent Session Context): {response.usage}")
