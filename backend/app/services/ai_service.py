@@ -127,7 +127,7 @@ def createContext(messages, user_email, assistant_id, goal_ids):
         if recent_context:
             messages_list.append({
                 "role": "system", 
-                "content": "This is a new session, but you have met them before. Consider the recent context above when greeting them."
+                "content": "This is a new session, but you have met them before. Consider the recent context above when greeting them. But be concise in what you say."
             })
         else:
             messages_list.append({
