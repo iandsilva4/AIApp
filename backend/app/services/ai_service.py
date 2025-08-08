@@ -52,6 +52,7 @@ def generate_ai_response(messages, user_email, assistant_id=None, goal_ids=None)
         openai_response = client.chat.completions.create(
             model=model,
             messages=full_context,
+            #verbosity="low",
             #max_completion_tokens=responseMaxTokens,  # Maximum number of tokens in response (1-16k)
             #temperature=1.2,              # Controls randomness/creativity (0.0-2.0, higher = more random)
             #top_p=1,                   # Nucleus sampling, controls diversity (0.0-1.0, lower = more focused)
@@ -201,7 +202,7 @@ def trim_user_summary(user_summary, latest_message):
         response = client.chat.completions.create(
             model=secondary_model,
             messages=[{"role": "system", "content": prompt}],
-            verbosity="low"
+            #verbosity="low"
             #max_completion_tokens=300  # Limit to a smaller summary
         )
 
@@ -241,7 +242,7 @@ def inject_relevant_past_insights(user_email, latest_message):
         response = client.chat.completions.create(
             model=secondary_model,
             messages=[{"role": "system", "content": prompt},{"role": "user", "content": "Can you please give me a summary of the past sessions?"}],
-            verbosity="low"
+            #verbosity="low"
             #max_completion_tokens=150  # Limit insights to 1-2 takeaways
         )
 
@@ -358,7 +359,6 @@ def generateUserSummary(session_summaries, previous_summary=None):
             user_summary_messages.append({"role": "user", "content": comparison_prompt})
         else:
             user_summary_messages.append({"role": "user", "content": "\n\n".join(session_summaries)})
-            print("AA#########################")
 
         # Generate summary
         summary_response = client.chat.completions.create(
@@ -522,7 +522,7 @@ def get_most_recent_session_context(user_email):
         response = client.chat.completions.create(
             model=secondary_model,
             messages=[{"role": "system", "content": prompt}],
-            verbosity="low"
+            #verbosity="low"
             #max_completion_tokens=300
         )
 
