@@ -201,6 +201,7 @@ def trim_user_summary(user_summary, latest_message):
         response = client.chat.completions.create(
             model=secondary_model,
             messages=[{"role": "system", "content": prompt}],
+            verbosity="low"
             #max_completion_tokens=300  # Limit to a smaller summary
         )
 
@@ -240,6 +241,7 @@ def inject_relevant_past_insights(user_email, latest_message):
         response = client.chat.completions.create(
             model=secondary_model,
             messages=[{"role": "system", "content": prompt},{"role": "user", "content": "Can you please give me a summary of the past sessions?"}],
+            verbosity="low"
             #max_completion_tokens=150  # Limit insights to 1-2 takeaways
         )
 
@@ -520,6 +522,7 @@ def get_most_recent_session_context(user_email):
         response = client.chat.completions.create(
             model=secondary_model,
             messages=[{"role": "system", "content": prompt}],
+            verbosity="low"
             #max_completion_tokens=300
         )
 
